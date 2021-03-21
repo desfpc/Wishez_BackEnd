@@ -6,36 +6,10 @@ import (
 	"log"
 	"net/http"
 	"github.com/desfpc/Wishez_User"
+	"github.com/desfpc/Wishez_Type"
 )
 
-//структура запроса
-type JsonRequest struct {
-	Entity string //сущность (user, wish, group, badge, etc...)
-	Id string //Идентификатор сущности (не обязательный)
-	Action string //Действие (get, list, update, insert, etc...)
-	Params map[string]string //Дополнительные параметры (page, sort, etc...) или поля entity (name, description, etc...)
-}
-
-//Item для JsonAnswerBody
-type JsonAnswerItem map[string]string
-
-//тело ответа
-type JsonAnswerBody struct {
-	Items []JsonAnswerItem
-}
-
-//ошибки парсинга
-type Errors []string
-
-//струкрута ответа
-type JsonAnswer struct {
-	Status string //статус (success, error)
-	Answer JsonAnswerBody //тело ответа
-	Response JsonRequest //запрашиваемые данные
-	Errors Errors //ошибки запроса
-}
-
-var errors Errors
+var errors types.Errors
 
 //возвращение тела запроса в виде строки
 func getBody(w http.ResponseWriter, r *http.Request) string  {
@@ -51,9 +25,9 @@ func getBody(w http.ResponseWriter, r *http.Request) string  {
 }
 
 //получкение массива из JSON запроса
-func getArrBody(w http.ResponseWriter, r *http.Request) JsonRequest {
+func getArrBody(w http.ResponseWriter, r *http.Request) types.JsonRequest {
 	var body = getBody(w, r)
-	var arr JsonRequest
+	var arr types.JsonRequest
 	err := json.Unmarshal([]byte(body), &arr)
 	if err != nil {
 		log.Printf("Error reading JSON from body: %v", err)
@@ -70,24 +44,24 @@ func checkAuthorize(){
 }
 
 //вывод JSON ответа
-func answer(w http.ResponseWriter, status string, answer JsonAnswerBody, response JsonRequest, code int){
+func answer(w http.ResponseWriter, status string, answer types.JsonAnswerBody, response types.JsonRequest, code int){
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 
-	jsonAnswer := JsonAnswer{status, answer, response, errors}
+	jsonAnswer := types.JsonAnswer{status, answer, response, errors}
 
 
 
 	json.NewEncoder(w).Encode(jsonAnswer)
-	errors = make(Errors,0)
+	errors = make(types.Errors,0)
 }
 
 //главный хандлер - все проверки и роутинг идут тут
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := getArrBody(w, r)
-	var anw JsonAnswerBody
+	var anw types.JsonAnswerBody
 
 	var code = 200
 
@@ -114,7 +88,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 //главная точнка входа - слушает все и выкидывает в apiHandler
 func main() {
-	errors = make(Errors,0)
+	errors = make(types.Errors,0)
 	http.HandleFunc("/", apiHandler)
 	log.Printf("Wishez server started")
 	log.Fatal(http.ListenAndServe(":8080", nil))
