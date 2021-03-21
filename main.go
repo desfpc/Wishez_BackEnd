@@ -58,7 +58,7 @@ func getArrBody(w http.ResponseWriter, r *http.Request) JsonRequest {
 		log.Printf("Error reading JSON from body: %v", err)
 		errors = append(errors, "Error reading JSON from body: "+body)
 	}
-	var resp, _ = json.Marshal(arr)
+	var _, _ = json.Marshal(arr)
 	//log.Printf("JsonBody: "+string(resp))
 	return arr
 }
@@ -71,10 +71,12 @@ func checkAuthorize(){
 //вывод JSON ответа
 func answer(w http.ResponseWriter, status string, answer JsonAnswerBody, response JsonRequest, code int){
 
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 
 	jsonAnswer := JsonAnswer{status, answer, response, errors}
+
+
 
 	json.NewEncoder(w).Encode(jsonAnswer)
 	errors = make(Errors,0)
@@ -86,6 +88,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	resp := getArrBody(w, r)
 	var anw JsonAnswerBody
 
+	var code = 200
+
 	/*anw.Items = make([]JsonAnswerItem,0)
 	item := make(JsonAnswerItem)
 	item["Test"] = "Value"
@@ -94,13 +98,20 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	var status = "success"
 
+	//если есть ошибки - ставим error status и не проводим обработку
 	if(len(errors) > 0){
 		status = "error"
+		code = 500
+	} else {
+
+
+
 	}
 
-	answer(w, status, anw, resp, 200)
+	answer(w, status, anw, resp, code)
 }
 
+//главная точнка входа - слушает все и выкидывает в apiHandler
 func main() {
 	errors = make(Errors,0)
 	http.HandleFunc("/", apiHandler)
