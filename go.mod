@@ -2,4 +2,10 @@ module github.com/desfpc/Wishez_BackEnd
 
 go 1.16
 
-require github.com/go-sql-driver/mysql v1.5.0 // indirect
+replace github.com/desfpc/Wishez_User => ./user
+
+replace github.com/desfpc/Wishez_DB => ./db
+
+require github.com/desfpc/Wishez_User v0.0.0-00010101000000-000000000000
+
+//replace github.com/desfpc/Wishez_DB => ../db

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"github.com/desfpc/Wishez_User"
 )
 
 //структура запроса

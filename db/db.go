@@ -7,8 +7,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func db() *sql.DB  {
-	db, err := sql.Open("mysql", "user:password@/dbname")
+func Db() *sql.DB  {
+	db, err := sql.Open("mysql", "root:root@/wishez")
 	if err != nil {
 		panic(err)
 	}
