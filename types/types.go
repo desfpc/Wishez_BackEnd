@@ -1,5 +1,8 @@
 package types
 
+//======================================================================================================================
+//Типы главного модуля для чтения запроса и выдачи ответа
+//======================================================================================================================
 //Item для JsonAnswerBody
 type JsonAnswerItem map[string]string
 
@@ -25,4 +28,25 @@ type JsonAnswer struct {
 	Answer JsonAnswerBody //тело ответа
 	Response JsonRequest //запрашиваемые данные
 	Errors Errors //ошибки запроса
+}
+
+
+//======================================================================================================================
+//Типы User
+//======================================================================================================================
+//тип для пользователя
+type User struct {
+	Id int
+	Email string
+	Pass string
+	Fio string
+	Sex string
+	Telegram string
+	Instagram string
+	Twitter string
+	Facebook string
+	Phone string
+	Role string
+	Avatar int
+	Google string
 }

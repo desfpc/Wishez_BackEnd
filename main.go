@@ -70,6 +70,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	item["Test"] = "Value"
 	anw.Items = append(anw.Items, item)
 	anw.Items = append(anw.Items, item)*/
+	
 
 	var status = "success"
 

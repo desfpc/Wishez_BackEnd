@@ -3,6 +3,8 @@ package user
 import (
 	"database/sql"
 	db "github.com/desfpc/Wishez_DB"
+	"github.com/desfpc/Wishez_Type"
+	"github.com/mitchellh/mapstructure"
 )
 
 var dbres *sql.DB
@@ -11,26 +13,14 @@ func initDb(){
 	dbres = db.Db()
 }
 
-//тип для пользователя
-type User struct {
-	Id int
-	Email string
-	Pass string
-	Fio string
-	Sex string
-	Telegram string
-	Instagram string
-	Twitter string
-	Facebook string
-	Phone string
-	Role string
-	Avatar int
-	Google string
+//роутер User
+func Route() {
+
 }
 
 //получение записи пользователя по id
-func getUser(id int) User {
-	var user User
+func getUser(id int) types.JsonAnswerItem {
+	var user types.User
 	initDb()
 
 	results, err := dbres.Query("SELECT * FROM users WHERE id = "+string(id))
@@ -49,5 +39,8 @@ func getUser(id int) User {
 		}
 	}
 
-	return user
+	item := make(types.JsonAnswerItem,0)
+	mapstructure.Decode(user, &item)
+
+	return item
 }
