@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/desfpc/Wishez_Type"
+	user "github.com/desfpc/Wishez_User"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"github.com/desfpc/Wishez_User"
-	"github.com/desfpc/Wishez_Type"
 )
 
 var errors types.Errors
@@ -70,18 +70,22 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	item["Test"] = "Value"
 	anw.Items = append(anw.Items, item)
 	anw.Items = append(anw.Items, item)*/
-	
 
 	var status = "success"
 
+	switch resp.Entity {
+		case "user":
+			anw = user.Route(resp)
+			if len(user.Errors) > 0 {
+				errors = user.Errors
+				user.Errors = make(types.Errors,0)
+			}
+	}
+
 	//если есть ошибки - ставим error status и не проводим обработку
-	if(len(errors) > 0){
+	if len(errors) > 0 {
 		status = "error"
 		code = 500
-	} else {
-
-
-
 	}
 
 	answer(w, status, anw, resp, code)
