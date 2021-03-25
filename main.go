@@ -62,6 +62,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := getArrBody(w, r)
 	var anw types.JsonAnswerBody
+	var err types.Errors
 
 	var code = 200
 
@@ -69,10 +70,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch resp.Entity {
 		case "user":
-			anw = user.Route(resp)
-			if len(user.Errors) > 0 {
-				errors = user.Errors
-				user.Errors = make(types.Errors,0)
+			anw, err = user.Route(resp)
+			if len(err) > 0 {
+				errors = err
 			}
 	}
 

@@ -2,12 +2,11 @@ package user
 
 import (
 	"database/sql"
-	db "github.com/desfpc/Wishez_DB"
+	"github.com/desfpc/Wishez_DB"
 	"github.com/desfpc/Wishez_Type"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,7 +21,6 @@ var jsonItem, _ = json.Marshal(item)
 log.Printf(string(jsonItem))*/
 
 var dbres *sql.DB
-var Errors types.Errors
 
 func initDb(){
 	dbres = db.Db()
@@ -45,11 +43,33 @@ func IsEmailValid(e string) bool {
 	return true
 }
 
+//роутер User
+func Route(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
+
+	var body types.JsonAnswerBody
+	var err types.Errors
+
+	//проверяем метод
+	switch resp.Action {
+	//регистрация пользователя
+	case "register":
+		body, err = registerUser(resp)
+	case "getById":
+		body, err = getUserByID(resp)
+	case "authorize":
+		body, err = authorize(resp)
+
+	}
+
+	return body, err
+}
+
 //проверка пароля
-func comparePasswords(hashedPwd string, plainPwd []byte) bool {
+func comparePasswords(hashedPwd string, plainPwd string) bool {
 
 	byteHash := []byte(hashedPwd)
-	err := bcrypt.CompareHashAndPassword(byteHash, plainPwd)
+	bytePlain := []byte(plainPwd)
+	err := bcrypt.CompareHashAndPassword(byteHash, bytePlain)
 	if err != nil {
 		log.Println(err)
 		return false
@@ -69,54 +89,45 @@ func hashAndSalt(pwd []byte) string {
 	return string(hash)
 }
 
-//роутер User
-func Route(resp types.JsonRequest) types.JsonAnswerBody {
-
+//авторизация пользователя
+func authorize(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
+	//var params = resp.Params
+	Errors := make(types.Errors,0)
 
-	//проверяем метод
-	switch resp.Action {
-		//регистрация пользователя
-		case "register":
-			body = registerUser(resp)
-		case "getById":
-			body = getUserByID(resp)
 
-	}
-
-	return body
+	return body, Errors
 }
 
 //регистрация нового пользователя
-func registerUser(resp types.JsonRequest) types.JsonAnswerBody {
+func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody
 	var params = resp.Params
+	Errors := make(types.Errors,0)
 
 	//проверка на наличае логина
 	var login, existsLogin = params["login"]
 	if(!existsLogin){
 		//body = make(types.JsonAnswerBody,0)
-		Errors = make(types.Errors,0)
+		Errors := make(types.Errors,0)
 		Errors = append(Errors, "No login")
 
-		return body
+		return body, Errors
 	}
 
-	login = db.Escape(login) //для запроса в БД
-	if(!IsEmailValid(login)){ //валидация login как email
-		Errors = make(types.Errors,0)
+	login = db.Escape(login)  //для запроса в БД
+	if !IsEmailValid(login) { //валидация login как email
 		Errors = append(Errors, "Not valid login email")
-		return body
+		return body, Errors
 	}
 
 
 	//проверка на наличае пароля
 	var pass, existsPass = params["pass"]
-	if(!existsPass){
-		Errors = make(types.Errors,0)
+	if !existsPass {
 		Errors = append(Errors, "No login")
-		return body
+		return body, Errors
 	}
 
 	//проверка пользователя в базе
@@ -128,10 +139,9 @@ func registerUser(resp types.JsonRequest) types.JsonAnswerBody {
 
 	count := db.CheckCount(results)
 
-	if(count > 0){
-		Errors = make(types.Errors,0)
+	if count > 0 {
 		Errors = append(Errors, "Login email "+login+" is already in use")
-		return body
+		return body, Errors
 	}
 
 	//регистрация пользователя
@@ -154,24 +164,25 @@ func registerUser(resp types.JsonRequest) types.JsonAnswerBody {
 
 
 
-	return body
+	return body, Errors
 
 }
 
 //получение записи пользователя по id
-func getUserByID(resp types.JsonRequest) types.JsonAnswerBody {
+func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
+
+	//TODO сделать проверку на права пользователя (собственный id, id в списке друзей, права админа или модератора)
 
 	var body types.JsonAnswerBody
 	var params = resp.Params
+	Errors := make(types.Errors,0)
 
 	//проверка на наличае id
 	var id, existsId = params["id"]
-	if(!existsId){
-		//body = make(types.JsonAnswerBody,0)
-		Errors = make(types.Errors,0)
+	if !existsId {
 		Errors = append(Errors, "No user Id")
 
-		return body
+		return body, Errors
 	}
 
 	initDb()
@@ -179,7 +190,7 @@ func getUserByID(resp types.JsonRequest) types.JsonAnswerBody {
 
 	query := "SELECT * FROM users WHERE id = "+id
 	results, err := dbres.Query(query)
-	log.Printf("query: "+query)
+	//log.Printf("query: "+query)
 	db.CheckErr(err)
 
 	//перебираем результаты
@@ -193,19 +204,63 @@ func getUserByID(resp types.JsonRequest) types.JsonAnswerBody {
 
 	item := make(types.JsonAnswerItem)
 	item["id"] = strconv.Itoa(user.Id)
+
+	if item["id"] == "0" {
+		Errors = append(Errors, "No user with Id: "+id)
+
+		return body, Errors
+	}
+
 	item["Email"] = user.Email
 	item["Fio"] = user.Fio
 	item["Sex"] = user.Sex
-	if reflect.TypeOf(user.Telegram) == nil{
+
+	if !user.Telegram.Valid {
 		item["Telegram"] = ""
 	} else {
-
+		item["Telegram"] = user.Telegram.String
 	}
 
-	//mapstructure.Decode(user, &item)
+	if !user.Instagram.Valid {
+		item["Instagram"] = ""
+	} else {
+		item["Instagram"] = user.Instagram.String
+	}
+
+	if !user.Twitter.Valid {
+		item["Twitter"] = ""
+	} else {
+		item["Twitter"] = user.Twitter.String
+	}
+
+	if !user.Facebook.Valid {
+		item["Facebook"] = ""
+	} else {
+		item["Facebook"] = user.Facebook.String
+	}
+
+	if !user.Phone.Valid {
+		item["Phone"] = ""
+	} else {
+		item["Phone"] = user.Phone.String
+	}
+
+	item["Role"] = user.Role
+
+	if !user.Avatar.Valid {
+		item["Avatar"] = ""
+	} else {
+		item["Avatar"] = strconv.FormatInt(user.Avatar.Int64, 10)
+	}
+
+	if !user.Google.Valid {
+		item["Google"] = ""
+	} else {
+		item["Google"] = user.Phone.String
+	}
 
 	body.Items = make([]types.JsonAnswerItem,0)
 	body.Items = append(body.Items, item)
 
-	return body
+	return body, Errors
 }
