@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/desfpc/Wishez_Type"
-	user "github.com/desfpc/Wishez_User"
+	"github.com/desfpc/Wishez_User"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -64,12 +64,6 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	var anw types.JsonAnswerBody
 
 	var code = 200
-
-	/*anw.Items = make([]JsonAnswerItem,0)
-	item := make(JsonAnswerItem)
-	item["Test"] = "Value"
-	anw.Items = append(anw.Items, item)
-	anw.Items = append(anw.Items, item)*/
 
 	var status = "success"
 

@@ -1,5 +1,7 @@
 package types
 
+import "database/sql"
+
 //======================================================================================================================
 //Типы главного модуля для чтения запроса и выдачи ответа
 //======================================================================================================================
@@ -41,12 +43,13 @@ type User struct {
 	Pass string
 	Fio string
 	Sex string
-	Telegram string
-	Instagram string
-	Twitter string
-	Facebook string
-	Phone string
+	Telegram sql.NullString
+	Instagram sql.NullString
+	Twitter sql.NullString
+	Facebook sql.NullString
+	Phone sql.NullString
 	Role string
-	Avatar int
-	Google string
+	Avatar sql.NullInt64
+	Google sql.NullString
+	CreatedAt string
 }
