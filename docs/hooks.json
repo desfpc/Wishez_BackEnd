@@ -1,0 +1,16 @@
+[{
+    "id": "deployment-wishez-backend",
+    "execute-command": "/root/webhooks/deployment-wishez-backend/deploy.sh",
+    "command-working-directory": "/root/wishez-backend/",
+    "response-message": "Executing deploy wishez backend script...",
+    "trigger-rule": {
+        "match": {
+            "type": "payload-hash-sha1",
+            "secret": "The Returners",
+            "parameter": {
+                "source": "header",
+                "name": "X-Hub-Signature"
+            }
+        }
+    }
+}]
