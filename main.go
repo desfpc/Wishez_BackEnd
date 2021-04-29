@@ -85,7 +85,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	answer(w, status, anw, resp, code)
 }
 
-//главная точнка входа - слушает все и выкидывает в apiHandler тестируем и плачем...
+//главная точнка входа - слушает все и выкидывает в apiHandler
 func main() {
 	errors = make(types.Errors,0)
 	http.HandleFunc("/", apiHandler)
