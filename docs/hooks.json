@@ -6,7 +6,7 @@
     "trigger-rule": {
         "match": {
             "type": "payload-hash-sha1",
-            "secret": "The Returners",
+            "secret": "025serg",
             "parameter": {
                 "source": "header",
                 "name": "X-Hub-Signature"
