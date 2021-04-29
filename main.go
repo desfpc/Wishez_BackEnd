@@ -89,6 +89,6 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	errors = make(types.Errors,0)
 	http.HandleFunc("/", apiHandler)
-	log.Printf("Wishez server started")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Printf("Wishez BackEnd server started")
+	log.Fatal(http.ListenAndServe(":8090", nil))
 }
