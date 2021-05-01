@@ -3,6 +3,7 @@ package user
 import (
 	"database/sql"
 	"github.com/desfpc/Wishez_DB"
+	"github.com/desfpc/Wishez_Helpers"
 	"github.com/desfpc/Wishez_Type"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -43,7 +44,7 @@ func IsEmailValid(e string) bool {
 	return true
 }
 
-//роутер User
+// Route роутер User
 func Route(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody
@@ -53,6 +54,7 @@ func Route(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	switch resp.Action {
 	//регистрация пользователя
 	case "register":
+
 		body, err = registerUser(resp)
 	case "getById":
 		body, err = getUserByID(resp)
@@ -135,7 +137,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	query := "SELECT count(id) count FROM users WHERE email = '"+login+"'"
 	//log.Printf("query: "+query)
 	results, err := dbres.Query(query)
-	db.CheckErr(err)
+	helpers.CheckErr(err)
 
 	count := db.CheckCount(results)
 
@@ -150,10 +152,10 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	res, err := dbres.Exec("INSERT INTO users (id, email, pass, fio, role, date_add, sex) " +
 		"VALUES (null, ?, ?, ?, ?, NOW(), ?)",
 		login, passHash, "Unknown", "user", "other")
-	db.CheckErr(err)
+	helpers.CheckErr(err)
 
 	lastId, err := res.LastInsertId()
-	db.CheckErr(err)
+	helpers.CheckErr(err)
 
 	item := make(types.JsonAnswerItem)
 	item["Login"] = login
@@ -168,10 +170,12 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 }
 
+func getUserFromBD(id string) {
+
+}
+
 //получение записи пользователя по id
 func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
-
-	//TODO сделать проверку на права пользователя (собственный id, id в списке друзей, права админа или модератора)
 
 	var body types.JsonAnswerBody
 	var params = resp.Params
@@ -191,7 +195,7 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	query := "SELECT * FROM users WHERE id = "+id
 	results, err := dbres.Query(query)
 	//log.Printf("query: "+query)
-	db.CheckErr(err)
+	helpers.CheckErr(err)
 
 	//перебираем результаты
 	for results.Next() {
@@ -199,7 +203,7 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
 			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.CreatedAt)
 
-		db.CheckErr(err)
+		helpers.CheckErr(err)
 	}
 
 	item := make(types.JsonAnswerItem)
@@ -214,50 +218,14 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	item["Email"] = user.Email
 	item["Fio"] = user.Fio
 	item["Sex"] = user.Sex
-
-	if !user.Telegram.Valid {
-		item["Telegram"] = ""
-	} else {
-		item["Telegram"] = user.Telegram.String
-	}
-
-	if !user.Instagram.Valid {
-		item["Instagram"] = ""
-	} else {
-		item["Instagram"] = user.Instagram.String
-	}
-
-	if !user.Twitter.Valid {
-		item["Twitter"] = ""
-	} else {
-		item["Twitter"] = user.Twitter.String
-	}
-
-	if !user.Facebook.Valid {
-		item["Facebook"] = ""
-	} else {
-		item["Facebook"] = user.Facebook.String
-	}
-
-	if !user.Phone.Valid {
-		item["Phone"] = ""
-	} else {
-		item["Phone"] = user.Phone.String
-	}
-
+	item["Telegram"] = helpers.MakeStringFromSQL(user.Telegram)
+	item["Instagram"] = helpers.MakeStringFromSQL(user.Instagram)
+	item["Twitter"] = helpers.MakeStringFromSQL(user.Twitter)
+	item["Facebook"] = helpers.MakeStringFromSQL(user.Facebook)
+	item["Phone"] = helpers.MakeStringFromSQL(user.Phone)
 	item["Role"] = user.Role
-
-	if !user.Avatar.Valid {
-		item["Avatar"] = ""
-	} else {
-		item["Avatar"] = strconv.FormatInt(user.Avatar.Int64, 10)
-	}
-
-	if !user.Google.Valid {
-		item["Google"] = ""
-	} else {
-		item["Google"] = user.Phone.String
-	}
+	item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
+	item["Google"] = helpers.MakeStringFromSQL(user.Google)
 
 	body.Items = make([]types.JsonAnswerItem,0)
 	body.Items = append(body.Items, item)

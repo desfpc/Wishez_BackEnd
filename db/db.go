@@ -2,14 +2,15 @@ package db
 
 import (
 	"database/sql"
-	"time"
-
+	"github.com/desfpc/Wishez_Helpers"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
-//соединение с БД
+// Db соединение с БД
 func Db() *sql.DB  {
-	db, err := sql.Open("mysql", "root:025sergLBBK1&*@/wishez")
+	//db, err := sql.Open("mysql", "root:025sergLBBK1&*@/wishez")
+	db, err := sql.Open("mysql", "root:root@/wishez")
 	if err != nil {
 		panic(err)
 	}
@@ -21,21 +22,15 @@ func Db() *sql.DB  {
 	return db
 }
 
-func CheckErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func CheckCount(rows *sql.Rows) (count int) {
 	for rows.Next() {
 		err:= rows.Scan(&count)
-		CheckErr(err)
+		helpers.CheckErr(err)
 	}
 	return count
 }
 
-//аналог real_escape_strings
+// Escape аналог real_escape_strings
 func Escape(sql string) string {
 	dest := make([]byte, 0, 2*len(sql))
 	var escape byte

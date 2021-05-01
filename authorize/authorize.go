@@ -4,15 +4,18 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	b64 "encoding/base64"
+	"encoding/json"
+	"github.com/desfpc/Wishez_Helpers"
 	"github.com/desfpc/Wishez_Type"
+	"log"
 	"regexp"
 	"strconv"
 	"time"
 )
 
-var Key = []byte("Абдб%дв_3453453ы!всв^амвам_DFGVBdf*vdf43*453")
+var key = []byte("Абдб%дв_3453453ы!всв^амвам_DFGVBdf*vdf43*453")
 
-//функция генерирует токен
+// MakeToken функция генерирует токен
 func MakeToken(iss string, kind string, user types.User) string {
 
 	//заголовок токена
@@ -34,7 +37,7 @@ func MakeToken(iss string, kind string, user types.User) string {
 	body := "{\"user_id\":"+id+"\"exp\":"+lifetime+"}"
 
 	//подпись
-	mac := hmac.New(sha256.New, Key)
+	mac := hmac.New(sha256.New, key)
 	mac.Write([]byte(header+body))
 	signature := string(mac.Sum(nil))
 
@@ -44,8 +47,8 @@ func MakeToken(iss string, kind string, user types.User) string {
 
 }
 
-//преобразование токена в читабельный вид
-func DeconcatToken(token string) types.Token {
+// deconcatToken преобразование токена в читабельный вид
+func deconcatToken(token string) types.Token {
 
 	//декодируем base64 токен
 	normalToken, _ := b64.StdEncoding.DecodeString(token)
@@ -64,13 +67,52 @@ func DeconcatToken(token string) types.Token {
 
 }
 
-//проверка токена на валидность
-func CheckToken(token types.Token) bool {
+// checkToken проверка токена на валидность
+func checkToken(token types.Token) bool {
 
 	//подпись
-	mac := hmac.New(sha256.New, Key)
+	mac := hmac.New(sha256.New, key)
 	mac.Write([]byte(token.Head + token.Body))
 	signature := mac.Sum(nil)
 
 	return hmac.Equal(signature, []byte(token.Signature))
+}
+
+// CheckUserToken проверка токена-строки на валидность
+func CheckUserToken(token string) bool {
+	var dToken = deconcatToken(token)
+	return checkToken(dToken)
+}
+
+// GetAuthorization проверка авторизации, получение активного пользователя
+func GetAuthorization(token string) (types.User, bool, bool) {
+	dToken := deconcatToken(token)
+	bodyString := dToken.Body
+	body := make(types.TokenBody)
+	var user types.User
+
+	if bodyString == "" {
+		return user, true, true
+	}
+
+	err := json.Unmarshal([]byte(bodyString), &body)
+	if err != nil {
+		log.Printf("Error reading JSON from token body: %v", err)
+		return user, true, true
+	}
+
+	if body["exp"] == "" {
+		return user, true, true
+	}
+
+	//var exp int64
+	exp, err := strconv.ParseInt(body["exp"], 10, 64)
+	helpers.CheckErr(err)
+
+	//если токен протух
+	if exp < time.Now().Unix() {
+
+	}
+
+	return user, false, false
 }

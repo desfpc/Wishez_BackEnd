@@ -2,30 +2,24 @@ package types
 
 import "database/sql"
 
-//======================================================================================================================
-//Тип токенов
-//======================================================================================================================
+// Token Тип токенов
 type Token struct {
 	Head string
 	Body string
 	Signature string
 }
-
-//======================================================================================================================
-//Типы главного модуля для чтения запроса и выдачи ответа
-//======================================================================================================================
-//Item для JsonAnswerBody
+// JsonAnswerItem - Item для JsonAnswerBody
 type JsonAnswerItem map[string]string
 
-//тело ответа
+// JsonAnswerBody тело ответа
 type JsonAnswerBody struct {
 	Items []JsonAnswerItem
 }
 
-//ошибки парсинга
+// Errors ошибки парсинга
 type Errors []string
 
-//структура запроса
+// JsonRequest структура запроса
 type JsonRequest struct {
 	Entity string //сущность (user, wish, group, badge, etc...)
 	Id string //Идентификатор сущности (не обязательный)
@@ -33,7 +27,7 @@ type JsonRequest struct {
 	Params map[string]string //Дополнительные параметры (page, sort, etc...) или поля entity (name, description, etc...)
 }
 
-//струкрута ответа
+// JsonAnswer струкрута ответа
 type JsonAnswer struct {
 	Status string //статус (success, error)
 	Answer JsonAnswerBody //тело ответа
@@ -41,11 +35,7 @@ type JsonAnswer struct {
 	Errors Errors //ошибки запроса
 }
 
-
-//======================================================================================================================
-//Типы User
-//======================================================================================================================
-//тип для пользователя
+// User тип для пользователя
 type User struct {
 	Id int
 	Email string
@@ -62,3 +52,6 @@ type User struct {
 	Google sql.NullString
 	CreatedAt string
 }
+
+// TokenBody тип тела токена
+type TokenBody map[string]string

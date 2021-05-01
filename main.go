@@ -33,7 +33,7 @@ func getArrBody(w http.ResponseWriter, r *http.Request) types.JsonRequest {
 		log.Printf("Error reading JSON from body: %v", err)
 		errors = append(errors, "Error reading JSON from body: "+body)
 	}
-	var _, _ = json.Marshal(arr)
+	//var _, _ = json.Marshal(arr)
 	//log.Printf("JsonBody: "+string(resp))
 	return arr
 }
@@ -49,9 +49,7 @@ func answer(w http.ResponseWriter, status string, answer types.JsonAnswerBody, r
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 
-	jsonAnswer := types.JsonAnswer{status, answer, response, errors}
-
-
+	jsonAnswer := types.JsonAnswer{Status: status, Answer: answer, Response: response, Errors: errors}
 
 	json.NewEncoder(w).Encode(jsonAnswer)
 	errors = make(types.Errors,0)
@@ -61,6 +59,15 @@ func answer(w http.ResponseWriter, status string, answer types.JsonAnswerBody, r
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := getArrBody(w, r)
+	accessToken := r.Header.Get("accessToken")
+	refreshToken := r.Header.Get("refreshToken")
+
+	log.Printf("accessToken: " + accessToken + "; refreshToken: " + refreshToken + ";")
+
+	if accessToken != "" {
+
+	}
+
 	var anw types.JsonAnswerBody
 	var err types.Errors
 
