@@ -45,22 +45,22 @@ func IsEmailValid(e string) bool {
 }
 
 // Route роутер User
-func Route(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
+func Route(resp types.JsonRequest, authorizedError bool, expiredError bool, auser types.User) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody
 	var err types.Errors
 
 	//проверяем метод
 	switch resp.Action {
-	//регистрация пользователя
 	case "register":
-
 		body, err = registerUser(resp)
-	case "getById":
-		body, err = getUserByID(resp)
 	case "authorize":
-		body, err = authorize(resp)
-
+		body, err = auth(resp)
+	case "getById":
+		err = helpers.AuthErrorAnswer(authorizedError, expiredError)
+		if len(err) == 0 {
+			body, err = getUserByID(resp)
+		}
 	}
 
 	return body, err
@@ -91,11 +91,12 @@ func hashAndSalt(pwd []byte) string {
 	return string(hash)
 }
 
-//авторизация пользователя
-func authorize(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
+// TODO авторизация пользователя
+func auth(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	//var params = resp.Params
 	Errors := make(types.Errors,0)
+
 
 
 	return body, Errors
@@ -110,11 +111,8 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	//проверка на наличае логина
 	var login, existsLogin = params["login"]
-	if(!existsLogin){
-		//body = make(types.JsonAnswerBody,0)
-		Errors := make(types.Errors,0)
+	if !existsLogin {
 		Errors = append(Errors, "No login")
-
 		return body, Errors
 	}
 
@@ -170,8 +168,48 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 }
 
-func getUserFromBD(id string) {
+// GetUserFromBD получение пользователя по его ID
+func GetUserFromBD(id string) types.User {
+	initDb()
+	var user types.User
 
+	query := "SELECT * FROM users WHERE id = "+id
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	//перебираем результаты
+	for results.Next() {
+		//пробуем все запихнуть в user-а
+		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
+			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.CreatedAt)
+
+		helpers.CheckErr(err)
+	}
+
+	return user
+}
+
+// ToJson формирование JsonAnswerItem из User
+func ToJson (user types.User) types.JsonAnswerItem {
+
+	item := make(types.JsonAnswerItem)
+	item["id"] = strconv.Itoa(user.Id)
+
+	if item["id"] != "0" {
+		item["Email"] = user.Email
+		item["Fio"] = user.Fio
+		item["Sex"] = user.Sex
+		item["Telegram"] = helpers.MakeStringFromSQL(user.Telegram)
+		item["Instagram"] = helpers.MakeStringFromSQL(user.Instagram)
+		item["Twitter"] = helpers.MakeStringFromSQL(user.Twitter)
+		item["Facebook"] = helpers.MakeStringFromSQL(user.Facebook)
+		item["Phone"] = helpers.MakeStringFromSQL(user.Phone)
+		item["Role"] = user.Role
+		item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
+		item["Google"] = helpers.MakeStringFromSQL(user.Google)
+	}
+
+	return item
 }
 
 //получение записи пользователя по id
@@ -189,43 +227,13 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 		return body, Errors
 	}
 
-	initDb()
-	var user types.User
-
-	query := "SELECT * FROM users WHERE id = "+id
-	results, err := dbres.Query(query)
-	//log.Printf("query: "+query)
-	helpers.CheckErr(err)
-
-	//перебираем результаты
-	for results.Next() {
-		//пробуем все запихнуть в user-а
-		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
-			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.CreatedAt)
-
-		helpers.CheckErr(err)
-	}
-
-	item := make(types.JsonAnswerItem)
-	item["id"] = strconv.Itoa(user.Id)
+	user := GetUserFromBD(id)
+	item := ToJson(user)
 
 	if item["id"] == "0" {
 		Errors = append(Errors, "No user with Id: "+id)
-
 		return body, Errors
 	}
-
-	item["Email"] = user.Email
-	item["Fio"] = user.Fio
-	item["Sex"] = user.Sex
-	item["Telegram"] = helpers.MakeStringFromSQL(user.Telegram)
-	item["Instagram"] = helpers.MakeStringFromSQL(user.Instagram)
-	item["Twitter"] = helpers.MakeStringFromSQL(user.Twitter)
-	item["Facebook"] = helpers.MakeStringFromSQL(user.Facebook)
-	item["Phone"] = helpers.MakeStringFromSQL(user.Phone)
-	item["Role"] = user.Role
-	item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
-	item["Google"] = helpers.MakeStringFromSQL(user.Google)
 
 	body.Items = make([]types.JsonAnswerItem,0)
 	body.Items = append(body.Items, item)

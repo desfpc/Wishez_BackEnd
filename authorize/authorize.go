@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/desfpc/Wishez_Helpers"
 	"github.com/desfpc/Wishez_Type"
+	"github.com/desfpc/Wishez_User"
 	"log"
 	"regexp"
 	"strconv"
@@ -85,24 +86,28 @@ func CheckUserToken(token string) bool {
 }
 
 // GetAuthorization проверка авторизации, получение активного пользователя
-func GetAuthorization(token string) (types.User, bool, bool) {
+func GetAuthorization(token string) (types.User, bool, bool) { //user, authorizeError, expireError
 	dToken := deconcatToken(token)
 	bodyString := dToken.Body
 	body := make(types.TokenBody)
-	var user types.User
+	var auser types.User
 
 	if bodyString == "" {
-		return user, true, true
+		return auser, true, true
 	}
 
 	err := json.Unmarshal([]byte(bodyString), &body)
 	if err != nil {
 		log.Printf("Error reading JSON from token body: %v", err)
-		return user, true, true
+		return auser, true, false
+	}
+
+	if !CheckUserToken(token) {
+		return auser, true, false
 	}
 
 	if body["exp"] == "" {
-		return user, true, true
+		return auser, false, true
 	}
 
 	//var exp int64
@@ -111,8 +116,11 @@ func GetAuthorization(token string) (types.User, bool, bool) {
 
 	//если токен протух
 	if exp < time.Now().Unix() {
-
+		return auser, false, true
 	}
 
-	return user, false, false
+	//получение данных пользователя
+	auser = user.GetUserFromBD(body["user_id"])
+
+	return auser, false, false
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/desfpc/Wishez_Authorize"
 	"github.com/desfpc/Wishez_Type"
 	"github.com/desfpc/Wishez_User"
 	"io/ioutil"
@@ -38,11 +39,6 @@ func getArrBody(w http.ResponseWriter, r *http.Request) types.JsonRequest {
 	return arr
 }
 
-//проверка запроса на авторизацию
-func checkAuthorize(){
-
-}
-
 //вывод JSON ответа
 func answer(w http.ResponseWriter, status string, answer types.JsonAnswerBody, response types.JsonRequest, code int){
 
@@ -64,8 +60,13 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("accessToken: " + accessToken + "; refreshToken: " + refreshToken + ";")
 
-	if accessToken != "" {
+	authorizeError := false
+	expireError:= false
+	var auser types.User
 
+
+	if accessToken != "" {
+		auser, authorizeError, expireError = authorize.GetAuthorization(accessToken)
 	}
 
 	var anw types.JsonAnswerBody
@@ -77,7 +78,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch resp.Entity {
 		case "user":
-			anw, err = user.Route(resp)
+			anw, err = user.Route(resp, authorizeError, expireError, auser)
 			if len(err) > 0 {
 				errors = err
 			}
