@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/desfpc/Wishez_Authorize"
 	"github.com/desfpc/Wishez_Type"
 	"github.com/desfpc/Wishez_User"
 	"io/ioutil"
@@ -25,7 +24,7 @@ func getBody(w http.ResponseWriter, r *http.Request) string  {
 	return string(body)
 }
 
-//получкение массива из JSON запроса
+//получение массива из JSON запроса
 func getArrBody(w http.ResponseWriter, r *http.Request) types.JsonRequest {
 	var body = getBody(w, r)
 	var arr types.JsonRequest
@@ -60,13 +59,13 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("accessToken: " + accessToken + "; refreshToken: " + refreshToken + ";")
 
-	authorizeError := false
+	authorizeError := true
 	expireError:= false
 	var auser types.User
 
 
 	if accessToken != "" {
-		auser, authorizeError, expireError = authorize.GetAuthorization(accessToken)
+		auser, authorizeError, expireError = user.GetAuthorization(accessToken)
 	}
 
 	var anw types.JsonAnswerBody
