@@ -27,13 +27,21 @@ func MakeStringFromIntSQL(str sql.NullInt64) string {
 }
 
 // AuthErrorAnswer ответ при ошибке авторизации или протухании токена
-func AuthErrorAnswer(authorizedError bool, expiredError bool) types.Errors {
+func AuthErrorAnswer(authorizedError bool, expiredError bool) (types.Errors, int) {
+	code := 200
 	Errors := make(types.Errors,0)
 	if authorizedError {
 		Errors = append(Errors, "Authorization Required")
+		code = 401
 	}else if expiredError {
 		Errors = append(Errors, "Access Token is Expired")
+		code = 401
 	}
+	return Errors, code
+}
 
-	return Errors
+func NoRouteErrorAnswer() (types.Errors, int) {
+	Errors := make(types.Errors,0)
+	Errors = append(Errors, "Entity and/or action not found")
+	return Errors, 404
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	helpers "github.com/desfpc/Wishez_Helpers"
 	"github.com/desfpc/Wishez_Type"
 	"github.com/desfpc/Wishez_User"
 	"io/ioutil"
@@ -65,25 +66,40 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		auser, authorizeError, expireError = user.GetAuthorization(accessToken)
 	}
 
+	//проверяем роуты, доступные без авторизации
+	var doRoute = false
+	if authorizeError || expireError {
+		if resp.Entity == "user" && (resp.Action == "register" || resp.Action == "authorize" || resp.Action == "refreshToken") {
+			doRoute = true
+		}
+	} else {
+		doRoute = true
+	}
+
 	var anw types.JsonAnswerBody
-	var err types.Errors
 	var code = 200
 	var status = "success"
 
-	switch resp.Entity {
+	if !doRoute {
+		//формируем ошибки авторизации
+		errors, code = helpers.AuthErrorAnswer(authorizeError, expireError)
+	} else {
+		//бегем по роутам
+		switch resp.Entity {
 		case "user":
-			anw, err = user.Route(resp, authorizeError, expireError, auser, refreshToken)
-			if len(err) > 0 {
-				errors = err
-			}
+			anw, errors, code = user.Route(resp, auser, refreshToken)
+		default:
+			errors, code = helpers.NoRouteErrorAnswer()
+		}
 	}
 
-	//если есть ошибки - ставим error status и не проводим обработку
+	//если есть ошибки - ставим error status
 	if len(errors) > 0 {
 		status = "error"
-		code = 500
+		if code == 200 {
+			code = 500
+		}
 	}
-
 	answer(w, status, anw, resp, code)
 }
 

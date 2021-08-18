@@ -151,9 +151,10 @@ func IsEmailValid(e string) bool {
 }
 
 // Route роутер User
-func Route(resp types.JsonRequest, authorizedError bool, expiredError bool, auser types.User, refreshToken string) (types.JsonAnswerBody, types.Errors) {
+func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types.JsonAnswerBody, types.Errors, int) {
 	var body types.JsonAnswerBody
 	var err types.Errors
+	var code = 200
 
 	//проверяем метод
 	switch resp.Action {
@@ -162,14 +163,13 @@ func Route(resp types.JsonRequest, authorizedError bool, expiredError bool, ause
 	case "authorize":
 		body, err = authorizeUser(resp)
 	case "getById":
-		err = helpers.AuthErrorAnswer(authorizedError, expiredError)
-		if len(err) == 0 {
-			body, err = getUserByID(resp)
-		}
+		body, err = getUserByID(resp)
 	case "refreshToken":
 		body, err = doRefreshToken(auser, refreshToken)
+	default:
+		err, code = helpers.NoRouteErrorAnswer()
 	}
-	return body, err
+	return body, err, code
 }
 
 //проверка пароля
