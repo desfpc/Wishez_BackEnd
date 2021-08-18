@@ -31,7 +31,7 @@ func AuthErrorAnswer(authorizedError bool, expiredError bool) types.Errors {
 	Errors := make(types.Errors,0)
 	if authorizedError {
 		Errors = append(Errors, "Authorization Required")
-	}else if authorizedError {
+	}else if expiredError {
 		Errors = append(Errors, "Access Token is Expired")
 	}
 

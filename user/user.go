@@ -62,19 +62,19 @@ func deconcatToken(token string) types.Token {
 
 	//декодируем base64 токен
 	normalToken, _ := b64.StdEncoding.DecodeString(token)
+	tokenString := string(normalToken)
 
 	//паттерн для токена
-	re := regexp.MustCompile("^{(.*)}{(.*)}(.*)$")
+	re := regexp.MustCompile("({.+})({.+})(.+)")
 
 	//заполняем токен
 	var deconcactedToken types.Token
 
-	deconcactedToken.Head = "{" + re.ReplaceAllString(string(normalToken), "$1") + "}"
-	deconcactedToken.Body = "{" + re.ReplaceAllString(string(normalToken), "$2") + "}"
-	deconcactedToken.Signature = re.ReplaceAllString(string(normalToken), "$3")
+	deconcactedToken.Head = re.ReplaceAllString(tokenString, "$1")
+	deconcactedToken.Body = re.ReplaceAllString(tokenString, "$2")
+	deconcactedToken.Signature = re.ReplaceAllString(tokenString, "$3")
 
 	return deconcactedToken
-
 }
 
 // checkToken проверка токена на валидность
@@ -124,13 +124,13 @@ func GetAuthorization(token string) (types.User, bool, bool) { //user, authorize
 	exp, err := strconv.ParseInt(body["exp"], 10, 64)
 	helpers.CheckErr(err)
 
+	//получение данных пользователя
+	auser = GetUserFromBD(body["user_id"])
+
 	//если токен протух
 	if exp < time.Now().Unix() {
 		return auser, false, true
 	}
-
-	//получение данных пользователя
-	auser = GetUserFromBD(body["user_id"])
 
 	return auser, false, false
 }
@@ -151,7 +151,7 @@ func IsEmailValid(e string) bool {
 }
 
 // Route роутер User
-func Route(resp types.JsonRequest, authorizedError bool, expiredError bool, auser types.User) (types.JsonAnswerBody, types.Errors) {
+func Route(resp types.JsonRequest, authorizedError bool, expiredError bool, auser types.User, refreshToken string) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var err types.Errors
 
@@ -166,6 +166,8 @@ func Route(resp types.JsonRequest, authorizedError bool, expiredError bool, ause
 		if len(err) == 0 {
 			body, err = getUserByID(resp)
 		}
+	case "refreshToken":
+		body, err = doRefreshToken(auser, refreshToken)
 	}
 	return body, err
 }
@@ -189,6 +191,27 @@ func hashAndSalt(pwd []byte) string {
 		log.Println(err)
 	}
 	return string(hash)
+}
+
+//обновление токенов
+func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody, types.Errors) {
+	var tuser types.User
+	var body types.JsonAnswerBody
+	errors := make(types.Errors,0)
+	authorizeError := true
+	expireError:= false
+	tuser, authorizeError, expireError = GetAuthorization(refreshToken)
+	//tuser, _, _ = GetAuthorization(refreshToken)
+	if !authorizeError && !expireError && tuser.Id == auser.Id {
+		item := make(types.JsonAnswerItem)
+		item["accessToken"] = MakeToken("access", auser)
+		item["refreshToken"] = MakeToken("refresh", auser)
+		body.Items = make([]types.JsonAnswerItem,0)
+		body.Items = append(body.Items, item)
+	} else {
+		errors = append(errors, "Wrong refreshToken")
+	}
+	return body, errors
 }
 
 //авторизация пользователя

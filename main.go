@@ -57,12 +57,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	accessToken := r.Header.Get("accessToken")
 	refreshToken := r.Header.Get("refreshToken")
 
-	log.Printf("accessToken: " + accessToken + "; refreshToken: " + refreshToken + ";")
-
 	authorizeError := true
 	expireError:= false
 	var auser types.User
-
 
 	if accessToken != "" {
 		auser, authorizeError, expireError = user.GetAuthorization(accessToken)
@@ -70,14 +67,12 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	var anw types.JsonAnswerBody
 	var err types.Errors
-
 	var code = 200
-
 	var status = "success"
 
 	switch resp.Entity {
 		case "user":
-			anw, err = user.Route(resp, authorizeError, expireError, auser)
+			anw, err = user.Route(resp, authorizeError, expireError, auser, refreshToken)
 			if len(err) > 0 {
 				errors = err
 			}
