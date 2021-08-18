@@ -63,7 +63,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	var auser types.User
 
 	if accessToken != "" {
-		auser, authorizeError, expireError = user.GetAuthorization(accessToken)
+		auser, authorizeError, expireError = user.GetAuthorization(accessToken, "access")
 	}
 
 	//проверяем роуты, доступные без авторизации

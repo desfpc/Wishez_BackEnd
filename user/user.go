@@ -45,7 +45,7 @@ func MakeToken(kind string, user types.User) string {
 	}
 
 	//тело токена
-	body := "{\"user_id\":\""+id+"\",\"exp\":\""+lifetime+"\"}"
+	body := "{\"user_id\":\""+id+"\",\"exp\":\""+lifetime+"\",\"kind\":\""+kind+"\"}"
 
 	//подпись
 	mac := hmac.New(sha256.New, key)
@@ -65,7 +65,7 @@ func deconcatToken(token string) types.Token {
 	tokenString := string(normalToken)
 
 	//паттерн для токена
-	re := regexp.MustCompile("({.+})({.+})(.+)")
+	re := regexp.MustCompile("({.+})({.+?})(.+)")
 
 	//заполняем токен
 	var deconcactedToken types.Token
@@ -95,7 +95,7 @@ func CheckUserToken(token string) bool {
 }
 
 // GetAuthorization проверка авторизации, получение активного пользователя
-func GetAuthorization(token string) (types.User, bool, bool) { //user, authorizeError, expireError
+func GetAuthorization(token string, kind string) (types.User, bool, bool) { //user, authorizeError, expireError
 	dToken := deconcatToken(token)
 	bodyString := dToken.Body
 	body := make(types.TokenBody)
@@ -113,6 +113,10 @@ func GetAuthorization(token string) (types.User, bool, bool) { //user, authorize
 	}
 
 	if !CheckUserToken(token) {
+		return auser, true, false
+	}
+
+	if body["kind"] != kind {
 		return auser, true, false
 	}
 
@@ -200,7 +204,7 @@ func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody
 	errors := make(types.Errors,0)
 	authorizeError := true
 	expireError:= false
-	tuser, authorizeError, expireError = GetAuthorization(refreshToken)
+	tuser, authorizeError, expireError = GetAuthorization(refreshToken, "refresh")
 	//tuser, _, _ = GetAuthorization(refreshToken)
 	if !authorizeError && !expireError && tuser.Id == auser.Id {
 		item := make(types.JsonAnswerItem)
