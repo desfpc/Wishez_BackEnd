@@ -67,13 +67,11 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//проверяем роуты, доступные без авторизации
-	var doRoute = false
+	var doRoute = true
 	if authorizeError || expireError {
-		if resp.Entity == "user" && (resp.Action == "register" || resp.Action == "authorize" || resp.Action == "refreshToken") {
-			doRoute = true
+		if !(resp.Entity == "user" && (resp.Action == "register" || resp.Action == "authorize" || resp.Action == "refreshToken")) {
+			doRoute = false
 		}
-	} else {
-		doRoute = true
 	}
 
 	var anw types.JsonAnswerBody
