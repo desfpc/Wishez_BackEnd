@@ -59,7 +59,7 @@
 				
 				<option value="file1">github.com/desfpc/Wishez_DB/db.go (0.0%)</option>
 				
-				<option value="file2">github.com/desfpc/Wishez_Helpers/helpers.go (45.0%)</option>
+				<option value="file2">github.com/desfpc/Wishez_Helpers/helpers.go (60.0%)</option>
 				
 				<option value="file3">github.com/desfpc/Wishez_User/user.go (0.0%)</option>
 				
@@ -302,7 +302,7 @@ func AuthErrorAnswer(authorizedError bool, expiredError bool) (types.Errors, int
         <span class="cov8" title="1">return Errors, code</span>
 }
 
-func NoRouteErrorAnswer() (types.Errors, int) <span class="cov0" title="0">{
+func NoRouteErrorAnswer() (types.Errors, int) <span class="cov8" title="1">{
         Errors := make(types.Errors,0)
         Errors = append(Errors, "Entity and/or action not found")
         return Errors, 404

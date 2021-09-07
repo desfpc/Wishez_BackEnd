@@ -33,3 +33,16 @@ func TestAuthErrorAnswer(t *testing.T) {
 		t.Error("Expected 0 errors, got ", len(errors))
 	}
 }
+
+func TestNoRouteErrorAnswer(t *testing.T) {
+	var errors types.Errors
+	var code int
+
+	errors, code = NoRouteErrorAnswer()
+	if code != 404 {
+		t.Error("Expected 404, got ", code)
+	}
+	if errors[0] != "Entity and/or action not found" {
+		t.Error("Expected Entity and/or action not found error, got ", errors[0])
+	}
+}
