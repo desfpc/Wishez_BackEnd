@@ -23,7 +23,7 @@ var dbres *sql.DB
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 func initDb(){
-	dbres = db.Db()
+	dbres = db.Db("", "")
 }
 
 // MakeToken функция генерирует токен

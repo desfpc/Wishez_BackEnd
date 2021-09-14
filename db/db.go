@@ -8,13 +8,17 @@ import (
 )
 
 // Db соединение с БД
-func Db() *sql.DB  {
-	//db, err := sql.Open("mysql", "root:025sergLBBK1&*@/wishez")
-	db, err := sql.Open("mysql", "root:root@/wishez")
-	if err != nil {
-		panic(err)
+func Db(driverName string, dataSourceName string) *sql.DB  {
+	if driverName == "" {
+		driverName = "mysql"
 	}
-	// See "Important settings" section.
+	if dataSourceName == "" {
+		dataSourceName = "root:root@/wishez"
+	}
+	//db, err := sql.Open("mysql", "root:025sergLBBK1&*@/wishez")
+	db, err := sql.Open(driverName, dataSourceName)
+	helpers.CheckErr(err)
+
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)

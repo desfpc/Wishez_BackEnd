@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"database/sql"
+	"errors"
 	types "github.com/desfpc/Wishez_Type"
 	"testing"
 )
@@ -45,4 +47,46 @@ func TestNoRouteErrorAnswer(t *testing.T) {
 	if errors[0] != "Entity and/or action not found" {
 		t.Error("Expected Entity and/or action not found error, got ", errors[0])
 	}
+}
+
+func TestMakeStringFromIntSQL(t *testing.T) {
+	var sqlNullInt = sql.NullInt64{Int64: 1000, Valid: true}
+	var str = MakeStringFromIntSQL(sqlNullInt)
+	if str != "1000" {
+		t.Error("Expected 1000, got ", str)
+	}
+
+	sqlNullInt = sql.NullInt64{Int64: 1000, Valid: false}
+	str = MakeStringFromIntSQL(sqlNullInt)
+	if str != "" {
+		t.Error("Expected '', got ", str)
+	}
+}
+
+func TestMakeStringFromSQL(t *testing.T) {
+	var sqlNullString = sql.NullString{String: "Test String", Valid: true}
+	var str = MakeStringFromSQL(sqlNullString)
+
+	if str != "Test String" {
+		t.Error("Expected 'Test String', got ", str)
+	}
+
+	sqlNullString = sql.NullString{String: "Test String", Valid: false}
+	str = MakeStringFromSQL(sqlNullString)
+	if str != "" {
+		t.Error("Expected '', got ", str)
+	}
+}
+
+func TestCheckErr(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+
+	CheckErr(nil)
+
+	var err = errors.New("this is error message")
+	CheckErr(err)
 }
