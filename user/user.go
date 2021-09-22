@@ -332,7 +332,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	return body, Errors
 }
 
-// GetUserFromBD получение пользователя по его ID
+// GetUserFromBD получение пользователя из БД по его ID
 func GetUserFromBD(id string) types.User {
 	initDb()
 	var user types.User

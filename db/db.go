@@ -26,6 +26,7 @@ func Db(driverName string, dataSourceName string) *sql.DB  {
 	return db
 }
 
+// CheckCount Возвращает кол-во строк запроса
 func CheckCount(rows *sql.Rows) (count int) {
 	for rows.Next() {
 		err:= rows.Scan(&count)
