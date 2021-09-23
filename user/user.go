@@ -65,7 +65,7 @@ func deconcatToken(token string) types.Token {
 	tokenString := string(normalToken)
 
 	//паттерн для токена
-	re := regexp.MustCompile("({.+})({.+?})(.+)")
+	re := regexp.MustCompile("(\\{.+?\\})(\\{.+?\\})(.*)")
 
 	//заполняем токен
 	var deconcactedToken types.Token
