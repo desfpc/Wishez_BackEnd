@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/desfpc/Wishez_Group"
 	helpers "github.com/desfpc/Wishez_Helpers"
 	"github.com/desfpc/Wishez_Type"
 	"github.com/desfpc/Wishez_User"
@@ -86,6 +87,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		switch resp.Entity {
 		case "user":
 			anw, errors, code = user.Route(resp, auser, refreshToken)
+		case "group":
+			anw, errors, code = group.Route(resp, auser)
 		default:
 			errors, code = helpers.NoRouteErrorAnswer()
 		}

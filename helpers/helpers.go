@@ -3,8 +3,13 @@ package helpers
 import (
 	"database/sql"
 	"github.com/desfpc/Wishez_Type"
+	"net"
+	"regexp"
 	"strconv"
+	"strings"
 )
+
+var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 func CheckErr(err error) {
 	if err != nil {
@@ -44,4 +49,19 @@ func NoRouteErrorAnswer() (types.Errors, int) {
 	Errors := make(types.Errors,0)
 	Errors = append(Errors, "Entity and/or action not found")
 	return Errors, 404
+}
+
+func IsEmailValid(e string) bool {
+	if len(e) < 3 || len(e) > 254 {
+		return false
+	}
+	if !emailRegex.MatchString(e) {
+		return false
+	}
+	parts := strings.Split(e, "@")
+	mx, err := net.LookupMX(parts[1])
+	if err != nil || len(mx) == 0 {
+		return false
+	}
+	return true
 }

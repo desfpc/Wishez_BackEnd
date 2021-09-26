@@ -90,3 +90,18 @@ func TestCheckErr(t *testing.T) {
 	var err = errors.New("this is error message")
 	CheckErr(err)
 }
+
+func TestIsEmailValid(t *testing.T) {
+	if !IsEmailValid("desfpc@gmail.com") {
+		t.Errorf("Error in valid email")
+	}
+	if IsEmailValid("desfpcgmail.com") {
+		t.Errorf("Valid wrong email")
+	}
+	if IsEmailValid("d@m") {
+		t.Errorf("Valid wrong email")
+	}
+	if IsEmailValid("dm") {
+		t.Errorf("Valid wrong email")
+	}
+}

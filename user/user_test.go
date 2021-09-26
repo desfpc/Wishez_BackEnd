@@ -29,10 +29,10 @@ func TestGetAuthorization(t *testing.T) {
 		t.Error("Wrong token user: " + systemUser.Email)
 	}
 	if authorizeError {
-		t.Error("Token authorize error")
+		t.Error("Wrong token authorize error")
 	}
 	if expireError {
-		t.Error("Token expire error")
+		t.Error("Wrong token expire error")
 	}
 
 	wrongToken := "eklmldkmfvldkmfvlkdfvkdl;fkvmldkfmvkldmfklvmdklfmvkldmfklvmdklfmkvlkmdlflkdfv="
@@ -41,11 +41,28 @@ func TestGetAuthorization(t *testing.T) {
 		t.Error("No token authorize error, but it's is")
 	}
 
-	expiredToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9eyJ1c2VyX2lkIjoiNSIsImV4cCI6IjE2MjkyNjk4NDkiLCJraW5kIjoiYWNjZXNzIn2Bc3BHSHZp8Jgch/Cfb8E9uA6vnKYayiBa1t7iVN40VQ=="
+	expiredToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9eyJ1c2VyX2lkIjoiMSIsImV4cCI6IjE2MzI0MTE3NTciLCJraW5kIjoiYWNjZXNzIn16WnlVd3EyeEZZeXYzMDZGWFpTMkhNYlJyd2w5KzNIQWdDOTZmRFJZK0Q4PQ=="
 	_, _, expireError = GetAuthorization(expiredToken, "access")
 	if !expireError {
 		t.Error("No token expire error, but it's is")
 	}
 
-	wrongSignatureToken := ""
+	wrongKindToken := MakeToken("access", user)
+	_, authorizeError, _ = GetAuthorization(wrongKindToken, "refresh")
+	if !authorizeError {
+		t.Error("No token authorize error when wrong token kind")
+	}
+
+	emptyExpToken := makeTokenFromStrings("{\"alg\":\"HS256\",\"typ\":\"JWT\"}", "{\"user_id\":\"1\",\"kind\":\"access\"}")
+	_, authorizeError, expireError = GetAuthorization(emptyExpToken, "access")
+	if !expireError {
+		t.Error("No token expire error, but it's is")
+	}
+
+	wrongSignatureToken := makeTokenFromStringsVsSignature("{\"alg\":\"HS256\",\"typ\":\"JWT\"}", "{\"user_id\":\"1\",\"kind\":\"access\"}", "DFgbfgbffgb423as")
+	_, authorizeError, _ = GetAuthorization(wrongSignatureToken, "access")
+	if !authorizeError {
+		t.Error("No token authorize error when wrong signature")
+	}
+
 }

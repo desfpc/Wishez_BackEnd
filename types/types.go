@@ -53,5 +53,16 @@ type User struct {
 	CreatedAt string
 }
 
+// Group тип списка желаний
+type Group struct {
+	Id int
+	Author int
+	Name string
+	Visible string
+	OpenSum float32
+	ClosedSum float32
+	DateAt string
+}
+
 // TokenBody тип тела токена
 type TokenBody map[string]string

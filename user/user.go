@@ -11,16 +11,13 @@ import (
 	"github.com/desfpc/Wishez_Type"
 	"golang.org/x/crypto/bcrypt"
 	"log"
-	"net"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
 var key = []byte("Абдб%дв_3453453ы!всв^амвам_DFGVBdf*vdf43*453")
 var dbres *sql.DB
-var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 func initDb(){
 	dbres = db.Db("", "")
@@ -47,14 +44,22 @@ func MakeToken(kind string, user types.User) string {
 	//тело токена
 	body := "{\"user_id\":\""+id+"\",\"exp\":\""+lifetime+"\",\"kind\":\""+kind+"\"}"
 
-	//подпись
+	//складываем, подписываеми и возвращаем токен
+	return makeTokenFromStrings(header, body)
+}
+
+// makeTokenFromStrings подписывает токен, складывает и кодирует
+func makeTokenFromStrings(header string, body string) string {
 	mac := hmac.New(sha256.New, key)
 	mac.Write([]byte(header+body))
-	signature := string(mac.Sum(nil))
+	// signature := string(mac.Sum(nil))
+	signature := b64.StdEncoding.EncodeToString(mac.Sum(nil))
+	return makeTokenFromStringsVsSignature(header, body, signature)
+}
 
-	var token = b64.StdEncoding.EncodeToString([]byte(header+body+signature))
-
-	return token
+// makeTokenFromStringsVsSignature складывает и кодирует токен из строк заголовка, тела и подписи
+func makeTokenFromStringsVsSignature(header string, body string, signature string) string {
+	return b64.StdEncoding.EncodeToString([]byte(header+body+signature))
 }
 
 // deconcatToken преобразование токена в читабельный вид
@@ -72,7 +77,8 @@ func deconcatToken(token string) types.Token {
 
 	deconcactedToken.Head = re.ReplaceAllString(tokenString, "$1")
 	deconcactedToken.Body = re.ReplaceAllString(tokenString, "$2")
-	deconcactedToken.Signature = re.ReplaceAllString(tokenString, "$3")
+	signature, _ := b64.StdEncoding.DecodeString(re.ReplaceAllString(tokenString, "$3"))
+	deconcactedToken.Signature = string(signature)
 
 	return deconcactedToken
 }
@@ -100,10 +106,6 @@ func GetAuthorization(token string, kind string) (types.User, bool, bool) { //us
 	bodyString := dToken.Body
 	body := make(types.TokenBody)
 	var auser types.User
-
-	if bodyString == "" {
-		return auser, true, true
-	}
 
 	err := json.Unmarshal([]byte(bodyString), &body)
 	if err != nil {
@@ -137,21 +139,6 @@ func GetAuthorization(token string, kind string) (types.User, bool, bool) { //us
 	}
 
 	return auser, false, false
-}
-
-func IsEmailValid(e string) bool {
-	if len(e) < 3 && len(e) > 254 {
-		return false
-	}
-	if !emailRegex.MatchString(e) {
-		return false
-	}
-	parts := strings.Split(e, "@")
-	mx, err := net.LookupMX(parts[1])
-	if err != nil || len(mx) == 0 {
-		return false
-	}
-	return true
 }
 
 // Route роутер User
@@ -285,7 +272,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	}
 
 	login = db.Escape(login)  //для запроса в БД
-	if !IsEmailValid(login) { //валидация login как email
+	if !helpers.IsEmailValid(login) { //валидация login как email
 		Errors = append(Errors, "Not valid login email")
 		return body, Errors
 	}
