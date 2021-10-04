@@ -153,10 +153,18 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 		body, err = registerUser(resp)
 	case "authorize":
 		body, err = authorizeUser(resp)
-	case "getById":
+	case "get":
 		body, err = getUserByID(resp)
 	case "refreshToken":
 		body, err = doRefreshToken(auser, refreshToken)
+	//TODO case "addFriend":
+	//	body, err = addFriend(resp)
+	//TODO case "deleteFriend":
+	//	body, err = deleteFriend(resp)
+	//TODO case "confirmFriend":
+	//	body, err = confirmFriend(resp)
+	//TODO case "list":
+	//	body, err = list(resp)
 	default:
 		err, code = helpers.NoRouteErrorAnswer()
 	}
@@ -221,20 +229,20 @@ func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody
 func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
+	var exist bool
 	Errors := make(types.Errors,0)
 
 	//проверка на наличае логина
-	var login, existsLogin = params["login"]
-	if !existsLogin {
-		Errors = append(Errors, "No login")
+	var login string
+	login, Errors, exist = helpers.ParamFromJsonRequest(params, "login", Errors)
+	if !exist {
 		return body, Errors
 	}
-	login = db.Escape(login)  //для запроса в БД
 
 	//проверка на наличае пароля
-	var pass, existsPass = params["pass"]
-	if !existsPass {
-		Errors = append(Errors, "No pass")
+	var pass string
+	pass, Errors, exist = helpers.ParamFromJsonRequest(params, "pass", Errors)
+	if !exist {
 		return body, Errors
 	}
 
@@ -281,25 +289,25 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody
 	var params = resp.Params
+	var exist bool
 	Errors := make(types.Errors,0)
 
 	//проверка на наличае логина
-	var login, existsLogin = params["login"]
-	if !existsLogin {
-		Errors = append(Errors, "No login")
+	var login string
+	login, Errors, exist = helpers.ParamFromJsonRequest(params, "login", Errors)
+	if !exist {
 		return body, Errors
 	}
 
-	login = db.Escape(login)  //для запроса в БД
 	if !helpers.IsEmailValid(login) { //валидация login как email
 		Errors = append(Errors, "Not valid login email")
 		return body, Errors
 	}
 
 	//проверка на наличае пароля
-	var pass, existsPass = params["pass"]
-	if !existsPass {
-		Errors = append(Errors, "No pass")
+	var pass string
+	pass, Errors, exist = helpers.ParamFromJsonRequest(params, "pass", Errors)
+	if !exist {
 		return body, Errors
 	}
 
@@ -342,7 +350,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 func GetUserFromBD(id string) types.User {
 	initDb()
 	var user types.User
-
+	id = helpers.Escape(id)
 	query := "SELECT * FROM users WHERE id = "+id
 	results, err := dbres.Query(query)
 	helpers.CheckErr(err)
@@ -384,7 +392,7 @@ func ToJson (user types.User) types.JsonAnswerItem {
 // getUserByID получение записи пользователя по id
 //
 // предпологаемый json запроса:
-// {"entity":"user","action":"getById","params":{"id":"1"}}
+// {"entity":"user","action":"get","params":{"id":"1"}}
 // entity string - сущность
 // action string - действие
 // params.id string - ID пользователя (число в виде строки)
@@ -392,16 +400,17 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody
 	var params = resp.Params
+	var exist bool
 	Errors := make(types.Errors,0)
 
 	//проверка на наличае id
-	var id, existsId = params["id"]
-	if !existsId {
-		Errors = append(Errors, "No user Id")
-
+	var id string
+	id, Errors, exist = helpers.ParamFromJsonRequest(params, "id", Errors)
+	if !exist {
 		return body, Errors
 	}
 
+	//TODO проверка прав на просмотр пользователя
 	user := GetUserFromBD(id)
 	item := ToJson(user)
 

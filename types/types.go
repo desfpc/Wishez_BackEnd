@@ -53,15 +53,45 @@ type User struct {
 	CreatedAt string
 }
 
-// Group тип списка желаний
+// Wish желание
+type Wish struct {
+	Id int
+	AuthorId int
+	Name string
+	Content sql.NullString
+	Cost float32
+	Currency string
+	GroupId int
+	Status string
+	DateAdd string
+	DateEdit sql.NullString
+	Priority int
+}
+
+// GroupUser пользователь списка желаний
+type GroupUser struct {
+	GroupId int
+	UserId int
+	Right string
+	DateAdd string
+}
+
+// Group список желаний
 type Group struct {
 	Id int
-	Author int
+	AuthorId int
 	Name string
 	Visible string
 	OpenSum float32
 	ClosedSum float32
-	DateAt string
+	DateAdd string
+}
+
+// GroupFull список желаний с пользователями и желаниями
+type GroupFull struct {
+	Group Group
+	Users []User
+	Wishes []Wish
 }
 
 // TokenBody тип тела токена

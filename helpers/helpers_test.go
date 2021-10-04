@@ -105,3 +105,14 @@ func TestIsEmailValid(t *testing.T) {
 		t.Errorf("Valid wrong email")
 	}
 }
+
+func TestEscape(t *testing.T) {
+	var asciiCode int32
+	asciiCode = 0
+	testString := "Test string 0 ' \n \r \032 \\ 0 \" " + string(rune(asciiCode))
+	testString2 := "Test string 0 \\' \\n \\r \\Z \\\\ 0 \\\" \\0"
+	escapedString := Escape(testString)
+	if escapedString != testString2 {
+		t.Error("Wrong escaped string: " + escapedString + ". Needed: " + testString2 + ".")
+	}
+}
