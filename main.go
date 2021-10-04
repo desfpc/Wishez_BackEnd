@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/desfpc/Wishez_Group"
-	helpers "github.com/desfpc/Wishez_Helpers"
+	"github.com/desfpc/Wishez_Helpers"
 	"github.com/desfpc/Wishez_Type"
 	"github.com/desfpc/Wishez_User"
 	"io/ioutil"

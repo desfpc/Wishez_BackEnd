@@ -163,7 +163,7 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 	return body, err, code
 }
 
-//проверка пароля
+// comparePasswords проверка пароля
 func comparePasswords(hashedPwd string, plainPwd string) bool {
 	byteHash := []byte(hashedPwd)
 	bytePlain := []byte(plainPwd)
@@ -175,7 +175,7 @@ func comparePasswords(hashedPwd string, plainPwd string) bool {
 	return true
 }
 
-//генерация хэша пароля
+// hashAndSalt генерация хэша пароля
 func hashAndSalt(pwd []byte) string {
 	hash, err := bcrypt.GenerateFromPassword(pwd, 10)
 	if err != nil {
@@ -184,7 +184,12 @@ func hashAndSalt(pwd []byte) string {
 	return string(hash)
 }
 
-//обновление токенов
+// doRefreshToken обновление токенов
+//
+// предпологаемый json запроса:
+// {"entity":"user","action":"refreshToken"}
+// entity string - сущность
+// action string - действие
 func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody, types.Errors) {
 	var tuser types.User
 	var body types.JsonAnswerBody
@@ -205,7 +210,14 @@ func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody
 	return body, errors
 }
 
-//авторизация пользователя
+// authorizeUser авторизация пользователя
+//
+// предпологаемый json запроса:
+// {"entity":"user","action":"authorize","params":{"login":"UserLogin","pass":"UserPassword"}}
+// entity string - сущность
+// action string - действие
+// params.login string - логин (email) пользователя
+// params.pass string - пароль пользователя
 func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
@@ -257,7 +269,14 @@ func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) 
 	return body, Errors
 }
 
-//регистрация нового пользователя
+// registerUser регистрация нового пользователя
+//
+// предпологаемый json запроса:
+// {"entity":"user","action":"register","params":{"login":"UserLogin","pass":"UserPassword"}}
+// entity string - сущность
+// action string - действие
+// params.login string - логин (email) пользователя
+// params.pass string - пароль пользователя
 func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody
@@ -362,7 +381,13 @@ func ToJson (user types.User) types.JsonAnswerItem {
 	return item
 }
 
-//получение записи пользователя по id
+// getUserByID получение записи пользователя по id
+//
+// предпологаемый json запроса:
+// {"entity":"user","action":"getById","params":{"id":"1"}}
+// entity string - сущность
+// action string - действие
+// params.id string - ID пользователя (число в виде строки)
 func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody

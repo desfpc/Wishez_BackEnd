@@ -1,6 +1,7 @@
 package user
 
 import (
+	types "github.com/desfpc/Wishez_Type"
 	"testing"
 )
 
@@ -63,6 +64,33 @@ func TestGetAuthorization(t *testing.T) {
 	_, authorizeError, _ = GetAuthorization(wrongSignatureToken, "access")
 	if !authorizeError {
 		t.Error("No token authorize error when wrong signature")
+	}
+
+}
+
+func TestGetUserByID(t *testing.T) {
+	var request = types.JsonRequest{
+		Entity: "user",
+		Id:     "",
+		Action: "getById",
+		Params: make(map[string]string),
+	}
+	request.Params["id"] = "1"
+	_, err := getUserByID(request)
+	if len(err) > 0 {
+		t.Error("Errors when getting user request by ID")
+	}
+
+	request.Params["id"] = "-1"
+	_, err = getUserByID(request)
+	if len(err) == 0 {
+		t.Error("No errors when getting user request by wrong ID")
+	}
+
+	request.Params = nil
+	_, err = getUserByID(request)
+	if len(err) == 0 {
+		t.Error("No errors when getting user by wrong request")
 	}
 
 }
