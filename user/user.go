@@ -410,7 +410,7 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 		return body, Errors
 	}
 
-	//TODO проверка прав на просмотр пользователя
+	//TODO проверка прав на просмотр пользователя для формирования коллекции (выводить все или короткие сведения)
 	user := GetUserFromBD(id)
 	item := ToJson(user)
 

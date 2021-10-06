@@ -26,8 +26,8 @@ func Route(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, type
 		body, err = createGroup(resp, auser)
 	case "addUser":
 		body, err = addUser(resp, auser)
-	//TODO case "deleteUser":
-	//	body, err = deleteUser(resp, auser)
+	case "deleteUser":
+		body, err = deleteUser(resp, auser)
 	//TODO case "delete":
 	//	body, err = deleteGroup(resp, auser)
 	//TODO case "edit":
@@ -58,6 +58,70 @@ func addUserToGroup(groupId int, userId int, right string) bool {
 	}
 
 	return true
+}
+
+// deleteUser удаление пользователя из группы
+//
+// предпологаемый json запроса:
+// {"entity":"group","action":"deleteUser","params":{"groupId":"GroupId","userId":"UserId"}}
+// entity string - сущность
+// action string - действие
+// params.groupId string - ID группы, куда нужно добавить пользователя
+// params.userId string - ID пользователя, добавляемого в группу
+func deleteUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	var params = resp.Params
+	var exist bool
+	Errors := make(types.Errors,0)
+
+	//проверка на наличае ID группы
+	var groupId string
+	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
+	if !exist {
+		return body, Errors
+	}
+
+	//проверка на наличае ID пользователя
+	var userId string
+	userId, Errors, exist = helpers.ParamFromJsonRequest(params, "userId", Errors)
+	if !exist {
+		return body, Errors
+	}
+
+	//проверка на существование группы
+	initDb()
+	query := "SELECT * FROM group WHERE id = "+groupId
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	var group types.Group
+	count := 0
+
+	//перебираем результаты
+	for results.Next() {
+		count += 1
+		//пробуем все запихнуть в group-у
+		err = results.Scan(&group.Id, &group.AuthorId, &group.Name, &group.Visible, &group.OpenSum, &group.ClosedSum, &group.DateAdd)
+		helpers.CheckErr(err)
+	}
+
+	if count == 0 {
+		Errors = append(Errors, "No group with Id: "+groupId)
+		return body, Errors
+	}
+
+	//проверяем права пользователя на возможэность добавить другого пользователя
+	if !checkUserAdmin(auser, group) {
+		Errors = append(Errors, "No admin rights to change group with Id: "+groupId)
+		return body, Errors
+	}
+
+	//удаляем пользователя из группы
+	_, err = dbres.Exec("DELETE FROM group_users WHERE group_id = ? AND user_id = ?",
+		groupId, userId)
+	helpers.CheckErr(err)
+
+	return body, Errors
 }
 
 // addUser добавление пользователя в группу
@@ -108,7 +172,7 @@ func addUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, ty
 	//перебираем результаты
 	for results.Next() {
 		count += 1
-		//пробуем все запихнуть в user-а
+		//пробуем все запихнуть в group-у
 		err = results.Scan(&group.Id, &group.AuthorId, &group.Name, &group.Visible, &group.OpenSum, &group.ClosedSum, &group.DateAdd)
 		helpers.CheckErr(err)
 	}
