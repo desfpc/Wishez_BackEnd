@@ -23,6 +23,36 @@ func initDb(){
 	dbres = db.Db("", "")
 }
 
+// Route роутер User
+func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types.JsonAnswerBody, types.Errors, int) {
+	var body types.JsonAnswerBody
+	var err types.Errors
+	var code = 200
+
+	//проверяем метод
+	switch resp.Action {
+	case "register":
+		body, err = registerUser(resp)
+	case "authorize":
+		body, err = authorizeUser(resp)
+	case "get":
+		body, err = getUserByID(resp)
+	case "refreshToken":
+		body, err = doRefreshToken(auser, refreshToken)
+	//TODO case "addFriend":
+	//	body, err = addFriend(resp)
+	//TODO case "deleteFriend":
+	//	body, err = deleteFriend(resp)
+	//TODO case "confirmFriend":
+	//	body, err = confirmFriend(resp)
+	//TODO case "list":
+	//	body, err = getUserList(resp)
+	default:
+		err, code = helpers.NoRouteErrorAnswer()
+	}
+	return body, err, code
+}
+
 // MakeToken функция генерирует токен
 func MakeToken(kind string, user types.User) string {
 
@@ -141,36 +171,6 @@ func GetAuthorization(token string, kind string) (types.User, bool, bool) { //us
 	return auser, false, false
 }
 
-// Route роутер User
-func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types.JsonAnswerBody, types.Errors, int) {
-	var body types.JsonAnswerBody
-	var err types.Errors
-	var code = 200
-
-	//проверяем метод
-	switch resp.Action {
-	case "register":
-		body, err = registerUser(resp)
-	case "authorize":
-		body, err = authorizeUser(resp)
-	case "get":
-		body, err = getUserByID(resp)
-	case "refreshToken":
-		body, err = doRefreshToken(auser, refreshToken)
-	//TODO case "addFriend":
-	//	body, err = addFriend(resp)
-	//TODO case "deleteFriend":
-	//	body, err = deleteFriend(resp)
-	//TODO case "confirmFriend":
-	//	body, err = confirmFriend(resp)
-	//TODO case "list":
-	//	body, err = list(resp)
-	default:
-		err, code = helpers.NoRouteErrorAnswer()
-	}
-	return body, err, code
-}
-
 // comparePasswords проверка пароля
 func comparePasswords(hashedPwd string, plainPwd string) bool {
 	byteHash := []byte(hashedPwd)
@@ -190,6 +190,49 @@ func hashAndSalt(pwd []byte) string {
 		log.Println(err)
 	}
 	return string(hash)
+}
+
+// GetUserFromBD получение пользователя из БД по его ID
+func GetUserFromBD(id string) types.User {
+	initDb()
+	var user types.User
+	id = helpers.Escape(id)
+	query := "SELECT * FROM users WHERE id = "+id
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	//перебираем результаты
+	for results.Next() {
+		//пробуем все запихнуть в user-а
+		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
+			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.CreatedAt)
+		helpers.CheckErr(err)
+	}
+
+	return user
+}
+
+// ToJson формирование JsonAnswerItem из User
+func ToJson (user types.User) types.JsonAnswerItem {
+
+	item := make(types.JsonAnswerItem)
+	item["id"] = strconv.Itoa(user.Id)
+
+	if item["id"] != "0" {
+		item["Email"] = user.Email
+		item["Fio"] = user.Fio
+		item["Sex"] = user.Sex
+		item["Telegram"] = helpers.MakeStringFromSQL(user.Telegram)
+		item["Instagram"] = helpers.MakeStringFromSQL(user.Instagram)
+		item["Twitter"] = helpers.MakeStringFromSQL(user.Twitter)
+		item["Facebook"] = helpers.MakeStringFromSQL(user.Facebook)
+		item["Phone"] = helpers.MakeStringFromSQL(user.Phone)
+		item["Role"] = user.Role
+		item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
+		item["Google"] = helpers.MakeStringFromSQL(user.Google)
+	}
+
+	return item
 }
 
 // doRefreshToken обновление токенов
@@ -346,49 +389,6 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	return body, Errors
 }
 
-// GetUserFromBD получение пользователя из БД по его ID
-func GetUserFromBD(id string) types.User {
-	initDb()
-	var user types.User
-	id = helpers.Escape(id)
-	query := "SELECT * FROM users WHERE id = "+id
-	results, err := dbres.Query(query)
-	helpers.CheckErr(err)
-
-	//перебираем результаты
-	for results.Next() {
-		//пробуем все запихнуть в user-а
-		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
-			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.CreatedAt)
-		helpers.CheckErr(err)
-	}
-
-	return user
-}
-
-// ToJson формирование JsonAnswerItem из User
-func ToJson (user types.User) types.JsonAnswerItem {
-
-	item := make(types.JsonAnswerItem)
-	item["id"] = strconv.Itoa(user.Id)
-
-	if item["id"] != "0" {
-		item["Email"] = user.Email
-		item["Fio"] = user.Fio
-		item["Sex"] = user.Sex
-		item["Telegram"] = helpers.MakeStringFromSQL(user.Telegram)
-		item["Instagram"] = helpers.MakeStringFromSQL(user.Instagram)
-		item["Twitter"] = helpers.MakeStringFromSQL(user.Twitter)
-		item["Facebook"] = helpers.MakeStringFromSQL(user.Facebook)
-		item["Phone"] = helpers.MakeStringFromSQL(user.Phone)
-		item["Role"] = user.Role
-		item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
-		item["Google"] = helpers.MakeStringFromSQL(user.Google)
-	}
-
-	return item
-}
-
 // getUserByID получение записи пользователя по id
 //
 // предпологаемый json запроса:
@@ -403,7 +403,7 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	var exist bool
 	Errors := make(types.Errors,0)
 
-	//проверка на наличае id
+	//проверка на наличие id
 	var id string
 	id, Errors, exist = helpers.ParamFromJsonRequest(params, "id", Errors)
 	if !exist {

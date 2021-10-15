@@ -7,8 +7,21 @@ import (
 	"time"
 )
 
+var res *sql.DB
+
+// Close закрытие соединения с БД
+func Close() {
+	res.Close()
+	res = nil
+}
+
 // Db соединение с БД
 func Db(driverName string, dataSourceName string) *sql.DB  {
+
+	if res != nil {
+		return res
+	}
+
 	if driverName == "" {
 		driverName = "mysql"
 	}
@@ -17,17 +30,24 @@ func Db(driverName string, dataSourceName string) *sql.DB  {
 	}
 	//db, err := sql.Open("mysql", "root:025sergLBBK1&*@/wishez")
 	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		res = nil
+	}
 	helpers.CheckErr(err)
 
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
 
-	return db
+	res = db
+	return res
 }
 
 // CheckCount Возвращает кол-во строк запроса
 func CheckCount(rows *sql.Rows) (count int) {
+	if rows == nil {
+		return 0
+	}
 	for rows.Next() {
 		err:= rows.Scan(&count)
 		helpers.CheckErr(err)

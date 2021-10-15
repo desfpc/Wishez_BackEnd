@@ -28,12 +28,12 @@ func Route(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, type
 		body, err = addUser(resp, auser)
 	case "deleteUser":
 		body, err = deleteUser(resp, auser)
-	//TODO case "delete":
-	//	body, err = deleteGroup(resp, auser)
-	//TODO case "edit":
-	//	body, err = editGroup(resp, auser)
-	//TODO case "list":
-	//	body, err = getGroupList(resp, auser)
+	case "delete":
+		body, err = deleteGroup(resp, auser)
+	case "edit":
+		body, err = editGroup(resp, auser)
+	case "list":
+		body, err = getGroupList(resp, auser)
 	//TODO case "get":
 	//	body, err = getGroup(resp, auser)
 	default:
@@ -41,6 +41,95 @@ func Route(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, type
 	}
 
 	return body, err, code
+}
+
+// getGroupAndCheckUserAdmin функция объединяет получение группы и проверка админских прав на нее у текущего пользователя
+func getGroupAndCheckUserAdmin(groupId string, auser types.User) (bool, types.Group, types.Errors) {
+	Errors := make(types.Errors,0)
+	exist, group := checkGroupExistById(groupId)
+	if !exist {
+		Errors = append(Errors, "No group with Id: "+groupId)
+		return false, group, Errors
+	}
+	if checkUserAdmin(auser, group) {
+		return true, group, Errors
+	}
+	Errors = append(Errors, "No admin rights to change group with Id: "+groupId)
+	return false, group, Errors
+}
+
+// getGroupAndCheckUser функция объединяет получение группы и проверка участия в ней текущего пользователя
+func getGroupAndCheckUser(groupId string, auser types.User) (bool, types.Group, types.Errors) {
+	Errors := make(types.Errors,0)
+	exist, group := checkGroupExistById(groupId)
+	if !exist {
+		Errors = append(Errors, "No group with Id: "+groupId)
+		return false, group, Errors
+	}
+	if checkUser(auser, group) {
+		return true, group, Errors
+	}
+	Errors = append(Errors, "No rights to view group with Id: "+groupId)
+	return false, group, Errors
+}
+
+// checkGroupExistById проверка на существование группы по string Id, если группа есть, выводим дополнительно ее данные
+func checkGroupExistById(groupId string) (bool, types.Group) {
+	query := "SELECT * FROM group WHERE id = "+groupId
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	var group types.Group
+	count := 0
+
+	//перебираем результаты
+	for results.Next() {
+		count += 1
+		//пробуем все запихнуть в group-у
+		err = results.Scan(&group.Id, &group.AuthorId, &group.Name, &group.Visible, &group.OpenSum, &group.ClosedSum, &group.DateAdd)
+		helpers.CheckErr(err)
+	}
+
+	if count == 0 {
+		return false, group
+	}
+	return true, group
+}
+
+// checkUserAdmin проверка прав пользователя на административные действия над группой
+func checkUserAdmin(auser types.User, group types.Group) bool {
+	if auser.Id == group.AuthorId {
+		return true
+	}
+
+	query := "SELECT COUNT(user_id) count WHERE user_id = ? AND group_id = ? AND right = 'admin'"
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	count := db.CheckCount(results)
+	if count > 0 {
+		return true
+	}
+
+	return false
+}
+
+// checkUser проверка прав пользователя на участие в группе
+func checkUser(auser types.User, group types.Group) bool {
+	if auser.Id == group.AuthorId {
+		return true
+	}
+
+	query := "SELECT COUNT(user_id) count WHERE user_id = ? AND group_id = ?"
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	count := db.CheckCount(results)
+	if count > 0 {
+		return true
+	}
+
+	return false
 }
 
 // addUserToGroup создает запись пользователя в группе
@@ -60,6 +149,58 @@ func addUserToGroup(groupId int, userId int, right string) bool {
 	return true
 }
 
+// TODO getGroupList получение списка доступных групп
+//
+// предпологаемый json запроса:
+// {"entity":"group","action":"list","params":{"groupType":"all","userId":1,"search":"подарок"}}
+// entity string - сущность
+// action string - действие
+// params.groupType string - тип получаемых групп: строка из массива ['own','alien']
+// params.userId string - id пользователя - друга, если надо получить его публичные группы (необязательно)
+// params.search string - строка для поиска (необязательно)
+func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	//var params = resp.Params
+	Errors := make(types.Errors,0)
+
+	return body, Errors
+}
+
+// deleteGroup удаление группы
+//
+// предпологаемый json запроса:
+// {"entity":"group","action":"delete","params":{"groupId":"GroupId"}}
+// entity string - сущность
+// action string - действие
+// params.groupId string - ID группы для удаления
+func deleteGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	var params = resp.Params
+	var exist bool
+	Errors := make(types.Errors,0)
+
+	//проверка на наличие ID группы
+	var groupId string
+	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
+	if !exist {
+		return body, Errors
+	}
+
+	//проверка на существование группы и прав пользователя на ее изменение
+	initDb()
+	exist, _, Errors = getGroupAndCheckUserAdmin(groupId, auser)
+	if !exist {
+		return body, Errors
+	}
+
+	//удаляем группу и плачем
+	_, err := dbres.Exec("DELETE FROM group WHERE id = ?",
+		groupId)
+	helpers.CheckErr(err)
+
+	return body, Errors
+}
+
 // deleteUser удаление пользователя из группы
 //
 // предпологаемый json запроса:
@@ -74,50 +215,29 @@ func deleteUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody,
 	var exist bool
 	Errors := make(types.Errors,0)
 
-	//проверка на наличае ID группы
+	//проверка на наличие ID группы
 	var groupId string
 	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
 	if !exist {
 		return body, Errors
 	}
 
-	//проверка на наличае ID пользователя
+	//проверка на наличие ID пользователя
 	var userId string
 	userId, Errors, exist = helpers.ParamFromJsonRequest(params, "userId", Errors)
 	if !exist {
 		return body, Errors
 	}
 
-	//проверка на существование группы
+	//проверка на существование группы и прав пользователя на ее изменение
 	initDb()
-	query := "SELECT * FROM group WHERE id = "+groupId
-	results, err := dbres.Query(query)
-	helpers.CheckErr(err)
-
-	var group types.Group
-	count := 0
-
-	//перебираем результаты
-	for results.Next() {
-		count += 1
-		//пробуем все запихнуть в group-у
-		err = results.Scan(&group.Id, &group.AuthorId, &group.Name, &group.Visible, &group.OpenSum, &group.ClosedSum, &group.DateAdd)
-		helpers.CheckErr(err)
-	}
-
-	if count == 0 {
-		Errors = append(Errors, "No group with Id: "+groupId)
-		return body, Errors
-	}
-
-	//проверяем права пользователя на возможэность добавить другого пользователя
-	if !checkUserAdmin(auser, group) {
-		Errors = append(Errors, "No admin rights to change group with Id: "+groupId)
+	exist, _, Errors = getGroupAndCheckUserAdmin(groupId, auser)
+	if !exist {
 		return body, Errors
 	}
 
 	//удаляем пользователя из группы
-	_, err = dbres.Exec("DELETE FROM group_users WHERE group_id = ? AND user_id = ?",
+	_, err := dbres.Exec("DELETE FROM group_users WHERE group_id = ? AND user_id = ?",
 		groupId, userId)
 	helpers.CheckErr(err)
 
@@ -139,52 +259,31 @@ func addUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, ty
 	var exist bool
 	Errors := make(types.Errors,0)
 
-	//проверка на наличае ID группы
+	//проверка на наличие ID группы
 	var groupId string
 	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
 	if !exist {
 		return body, Errors
 	}
 
-	//проверка на наличае ID пользователя
+	//проверка на наличие ID пользователя
 	var userId string
 	userId, Errors, exist = helpers.ParamFromJsonRequest(params, "userId", Errors)
 	if !exist {
 		return body, Errors
 	}
 
-	//проверка на наличае прав пользователя
+	//проверка на наличие прав пользователя
 	var right string
 	right, Errors, exist = helpers.ParamFromJsonRequest(params, "right", Errors)
 	if !exist {
 		return body, Errors
 	}
 
-	//проверка на существование группы
+	//проверка на существование группы и прав пользователя на ее изменение
 	initDb()
-	query := "SELECT * FROM group WHERE id = "+groupId
-	results, err := dbres.Query(query)
-	helpers.CheckErr(err)
-
-	var group types.Group
-	count := 0
-
-	//перебираем результаты
-	for results.Next() {
-		count += 1
-		//пробуем все запихнуть в group-у
-		err = results.Scan(&group.Id, &group.AuthorId, &group.Name, &group.Visible, &group.OpenSum, &group.ClosedSum, &group.DateAdd)
-		helpers.CheckErr(err)
-	}
-
-	if count == 0 {
-		Errors = append(Errors, "No group with Id: "+groupId)
-		return body, Errors
-	}
-
-	//проверяем права пользователя на возможэность добавить другого пользователя
-	if !checkUserAdmin(auser, group) {
-		Errors = append(Errors, "No admin rights to change group with Id: "+groupId)
+	exist, _, Errors = getGroupAndCheckUserAdmin(groupId, auser)
+	if !exist {
 		return body, Errors
 	}
 
@@ -211,22 +310,62 @@ func addUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, ty
 	return body, Errors
 }
 
-// checkUserAdmin проверка прав пользователя на административные действия над группой
-func checkUserAdmin(auser types.User, group types.Group) bool {
-	if auser.Id == group.AuthorId {
-		return true
+// editGroup изменение группы
+//
+// предпологаемый json запроса:
+// {"entity":"group","action":"edit","params":{"name":"GroupName","visible":"visibleString", "groupId":"GroupId"}}
+// entity string - сущность
+// action string - действие
+// params.groupId string - ID группы для редактирования
+// params.name string - новое наименование группы (необязательно)
+// params.visible string - видимость группы: строка из массива ['hidden','normal','public'] (необязательно)
+func editGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	var params = resp.Params
+	var exist bool
+	Errors := make(types.Errors,0)
+
+	//проверка на наличие ID группы
+	var groupId string
+	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
+	if !exist {
+		return body, Errors
 	}
 
-	query := "SELECT COUNT(user_id) count WHERE user_id = ? AND group_id = ? AND right = 'admin'"
-	results, err := dbres.Query(query)
-	helpers.CheckErr(err)
-
-	count := db.CheckCount(results)
-	if count > 0 {
-		return true
+	//проверка на существование группы и прав пользователя на ее изменение
+	initDb()
+	exist, _, Errors = getGroupAndCheckUserAdmin(groupId, auser)
+	if !exist {
+		return body, Errors
 	}
 
-	return false
+	//проверка на наличие наименования
+	var name, existsName = params["name"]
+
+	//проверка на наличие видимости
+	var visible, existsVisible = params["visible"]
+
+	//формируем запрос в зависимости от переданных значений на изменение
+	if !existsName && ! existsVisible {
+		Errors = append(Errors, "No values to change")
+		return body, Errors
+	}
+
+	if existsName && existsVisible {
+		_, err := dbres.Exec("UPDATE group SET name = ?, visible = ? WHERE id = ?",
+			name, visible, groupId)
+		helpers.CheckErr(err)
+	} else if existsName {
+		_, err := dbres.Exec("UPDATE group SET name = ? WHERE id = ?",
+			name, groupId)
+		helpers.CheckErr(err)
+	} else {
+		_, err := dbres.Exec("UPDATE group SET visible = ? WHERE id = ?",
+			visible, groupId)
+		helpers.CheckErr(err)
+	}
+
+	return body, Errors
 }
 
 // createGroup создание нового листа желаний
@@ -242,14 +381,14 @@ func createGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 	var params = resp.Params
 	Errors := make(types.Errors,0)
 
-	//проверка на наличае наименования
+	//проверка на наличие наименования
 	var name, existsName = params["name"]
 	if !existsName {
 		Errors = append(Errors, "No name")
 		return body, Errors
 	}
 
-	//проверка на наличае видимости
+	//проверка на наличие видимости
 	var visible, existsVisible = params["visible"]
 	if !existsVisible {
 		Errors = append(Errors, "No visible")

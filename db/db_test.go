@@ -14,7 +14,7 @@ func TestDb(t *testing.T) {
 	if err == nil {
 		t.Error("Expected DB error, but not found")
 	}
-	wrongDbres.Close()
+	Close()
 
 	//Default connection settings
 	var dbres = Db("","")
@@ -24,7 +24,7 @@ func TestDb(t *testing.T) {
 	if err != nil {
 		t.Error("Unexpected DB errors")
 	}
-	dbres.Close()
+	Close()
 }
 
 func TestCheckCount(t *testing.T) {
