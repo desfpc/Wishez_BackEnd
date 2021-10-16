@@ -205,7 +205,7 @@ func GetUserFromBD(id string) types.User {
 	for results.Next() {
 		//пробуем все запихнуть в user-а
 		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
-			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.CreatedAt)
+			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.DateAdd)
 		helpers.CheckErr(err)
 	}
 
@@ -230,6 +230,7 @@ func ToJson (user types.User) types.JsonAnswerItem {
 		item["Role"] = user.Role
 		item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
 		item["Google"] = helpers.MakeStringFromSQL(user.Google)
+		item["DateAdd"] = user.DateAdd
 	}
 
 	return item
@@ -302,7 +303,7 @@ func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) 
 	for results.Next() {
 		//пробуем все запихнуть в user-а
 		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
-			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.CreatedAt)
+			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.DateAdd)
 		helpers.CheckErr(err)
 	}
 

@@ -32,14 +32,12 @@ func Db(driverName string, dataSourceName string) *sql.DB  {
 	db, err := sql.Open(driverName, dataSourceName)
 	if err != nil {
 		res = nil
+	} else {
+		db.SetConnMaxLifetime(time.Minute * 3)
+		db.SetMaxOpenConns(10)
+		db.SetMaxIdleConns(10)
+		res = db
 	}
-	helpers.CheckErr(err)
-
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-
-	res = db
 	return res
 }
 

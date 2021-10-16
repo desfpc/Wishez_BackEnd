@@ -2,6 +2,7 @@ package group
 
 import (
 	"database/sql"
+	"fmt"
 	db "github.com/desfpc/Wishez_DB"
 	helpers "github.com/desfpc/Wishez_Helpers"
 	types "github.com/desfpc/Wishez_Type"
@@ -149,19 +150,73 @@ func addUserToGroup(groupId int, userId int, right string) bool {
 	return true
 }
 
-// TODO getGroupList получение списка доступных групп
+// getGroupList получение списка доступных групп
 //
 // предпологаемый json запроса:
 // {"entity":"group","action":"list","params":{"groupType":"all","userId":1,"search":"подарок"}}
 // entity string - сущность
 // action string - действие
-// params.groupType string - тип получаемых групп: строка из массива ['own','alien']
-// params.userId string - id пользователя - друга, если надо получить его публичные группы (необязательно)
+// params.groupType string - тип получаемых групп: строка из массива ['own','all']
+// params.userId string - id пользователя, если надо получить его публичные группы (необязательно)
 // params.search string - строка для поиска (необязательно)
 func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
-	//var params = resp.Params
+	var params = resp.Params
 	Errors := make(types.Errors,0)
+
+	//проверка на наличие типа группы
+	groupType, Errors, exist := helpers.ParamFromJsonRequest(params, "groupType", Errors)
+	if !exist {
+		return body, Errors
+	}
+
+	if groupType != "all" {
+		groupType = "own"
+	}
+
+	//проверка на наличие ID пользователя для получения группы
+	userId, Errors, existUser := helpers.ParamFromJsonRequest(params, "userId", Errors)
+	userId = helpers.Escape(userId)
+
+	//проверка на существование строки поиска
+	search, Errors, existSearch := helpers.ParamFromJsonRequest(params, "search", Errors)
+	search = helpers.Escape(search)
+
+	//формируем запрос в БД
+	query := "SELECT * FROM group WHERE "
+
+	if groupType == "own" {
+		query += "author = " + strconv.Itoa(auser.Id) + " "
+	} else {
+		query += "visible = 'public' "
+		if existUser {
+			query += "AND author = " + userId + " "
+		}
+	}
+	if existSearch {
+		query += "AND name LIKE ('%" + search + "%')"
+	}
+
+	initDb()
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	body.Items = make([]types.JsonAnswerItem,0)
+
+	for results.Next() {
+		var group types.Group
+		err = results.Scan(&group.Id, &group.AuthorId, &group.Name, &group.Visible, &group.OpenSum, &group.ClosedSum, &group.DateAdd)
+		helpers.CheckErr(err)
+		item := make(types.JsonAnswerItem)
+		item["Id"] = strconv.Itoa(group.Id)
+		item["AuthorId"] = strconv.Itoa(group.AuthorId)
+		item["Name"] = group.Name
+		item["Visible"] = group.Visible
+		item["OpenSum"] = fmt.Sprintf("%.2f", group.OpenSum)
+		item["ClosedSum"] = fmt.Sprintf("%.2f", group.ClosedSum)
+		item["DateAdd"] = group.DateAdd
+		body.Items = append(body.Items, item)
+	}
 
 	return body, Errors
 }
@@ -176,12 +231,10 @@ func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBod
 func deleteGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
-	var exist bool
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
-	var groupId string
-	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
+	groupId, Errors, exist := helpers.ParamFromJsonRequest(params, "groupId", Errors)
 	if !exist {
 		return body, Errors
 	}

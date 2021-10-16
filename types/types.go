@@ -50,7 +50,7 @@ type User struct {
 	Role string
 	Avatar sql.NullInt64
 	Google sql.NullString
-	CreatedAt string
+	DateAdd string
 }
 
 // Wish желание

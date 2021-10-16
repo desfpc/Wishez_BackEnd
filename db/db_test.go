@@ -18,6 +18,10 @@ func TestDb(t *testing.T) {
 
 	//Default connection settings
 	var dbres = Db("","")
+	var dbres2 = Db("","")
+	if dbres != dbres2 {
+		t.Error("DB resources must be equal")
+	}
 	query = "SELECT count(id) cid FROM users"
 	_, err = dbres.Query(query)
 
@@ -29,13 +33,19 @@ func TestDb(t *testing.T) {
 
 func TestCheckCount(t *testing.T) {
 	var dbres = Db("","")
+
+	count := CheckCount(nil)
+	if count != 0 {
+		t.Error("Count must be 0")
+	}
+
 	query := "SELECT count(id) cnt FROM users"
 	rows, err := dbres.Query(query)
 
 	if err != nil {
 		t.Error("Unexpected DB errors")
 	}
-	var count = CheckCount(rows)
+	count = CheckCount(rows)
 
 	query = "SELECT count(id) cnt FROM users"
 	qCountRes, err := dbres.Query(query)
