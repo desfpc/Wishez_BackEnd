@@ -75,13 +75,13 @@ func TestGetUserByID(t *testing.T) {
 		Action: "getById",
 		Params: make(map[string]string),
 	}
-	request.Params["id"] = "1"
+	request.Params["Id"] = "1"
 	_, err := getUserByID(request)
 	if len(err) > 0 {
 		t.Error("Errors when getting user request by ID")
 	}
 
-	request.Params["id"] = "-1"
+	request.Params["Id"] = "-1"
 	_, err = getUserByID(request)
 	if len(err) == 0 {
 		t.Error("No errors when getting user request by wrong ID")

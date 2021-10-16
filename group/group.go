@@ -6,6 +6,7 @@ import (
 	db "github.com/desfpc/Wishez_DB"
 	helpers "github.com/desfpc/Wishez_Helpers"
 	types "github.com/desfpc/Wishez_Type"
+	users "github.com/desfpc/Wishez_User"
 	"strconv"
 )
 
@@ -29,14 +30,16 @@ func Route(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, type
 		body, err = addUser(resp, auser)
 	case "deleteUser":
 		body, err = deleteUser(resp, auser)
+	case "userList":
+		body, err = getUserList(resp, auser)
 	case "delete":
 		body, err = deleteGroup(resp, auser)
 	case "edit":
 		body, err = editGroup(resp, auser)
 	case "list":
 		body, err = getGroupList(resp, auser)
-	//TODO case "get":
-	//	body, err = getGroup(resp, auser)
+	case "get":
+		body, err = getGroup(resp, auser)
 	default:
 		err, code = helpers.NoRouteErrorAnswer()
 	}
@@ -150,6 +153,101 @@ func addUserToGroup(groupId int, userId int, right string) bool {
 	return true
 }
 
+// ToJson формирование JsonAnswerItem из Group
+func ToJson(group types.Group) types.JsonAnswerItem {
+
+	item := make(types.JsonAnswerItem)
+	item["Id"] = strconv.Itoa(group.Id)
+
+	if item["Id"] != "0" {
+		item["AuthorId"] = strconv.Itoa(group.AuthorId)
+		item["Name"] = group.Name
+		item["Visible"] = group.Visible
+		item["OpenSum"] = fmt.Sprintf("%.2f", group.OpenSum)
+		item["ClosedSum"] = fmt.Sprintf("%.2f", group.ClosedSum)
+		item["DateAdd"] = group.DateAdd
+	}
+
+	return item
+}
+
+// getGroup получение группы по Id
+//
+// предпологаемый json запроса:
+// {"entity":"group","action":"userList","params":{"groupId":"GroupId"}}
+// entity string - сущность
+// action string - действие
+// params.groupId string - ID группы
+func getGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	var params = resp.Params
+	Errors := make(types.Errors,0)
+
+	//проверка на наличие ID группы
+	groupId, Errors, exist := helpers.ParamFromJsonRequest(params, "groupId", Errors)
+	if !exist {
+		return body, Errors
+	}
+
+	//проверка на существование группы и прав пользователя на ее просмотр
+	initDb()
+	exist, group, Errors := getGroupAndCheckUser(groupId, auser)
+	if !exist {
+		return body, Errors
+	}
+
+	//запихиваем группу в ответ
+	body.Items = make([]types.JsonAnswerItem,0)
+	body.Items = append(body.Items, ToJson(group))
+
+	return body, Errors
+}
+
+// getUserList получение списка пользователей в группе (метод еще не точный, возможно будет удален)
+//
+// предпологаемый json запроса:
+// {"entity":"group","action":"userList","params":{"groupId":"GroupId"}}
+// entity string - сущность
+// action string - действие
+// params.groupId string - ID группы
+func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	var params = resp.Params
+	Errors := make(types.Errors,0)
+
+	//проверка на наличие ID группы
+	groupId, Errors, exist := helpers.ParamFromJsonRequest(params, "groupId", Errors)
+	if !exist {
+		return body, Errors
+	}
+
+	//проверка на существование группы и прав пользователя на ее просмотр
+	initDb()
+	exist, _, Errors = getGroupAndCheckUser(groupId, auser)
+	if !exist {
+		return body, Errors
+	}
+
+	//получение списка пользователей
+	results, err := dbres.Query("SELECT * FROM users WHERE id IN (SELECT user_id FROM group_users WHERE group_id = ?)", groupId)
+	helpers.CheckErr(err)
+
+	body.Items = make([]types.JsonAnswerItem,0)
+
+	for results.Next() {
+		var user types.User
+		err = results.Scan(&user.Id, &user.Email, &user.Pass, &user.Fio, &user.Sex, &user.Telegram, &user.Instagram, &user.Twitter, &user.Facebook,
+			&user.Phone, &user.Role, &user.Avatar, &user.Google, &user.DateAdd)
+		helpers.CheckErr(err)
+
+		item := make(types.JsonAnswerItem)
+		item = users.ToJson(user)
+		body.Items = append(body.Items, item)
+	}
+
+	return body, Errors
+}
+
 // getGroupList получение списка доступных групп
 //
 // предпологаемый json запроса:
@@ -207,14 +305,7 @@ func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBod
 		var group types.Group
 		err = results.Scan(&group.Id, &group.AuthorId, &group.Name, &group.Visible, &group.OpenSum, &group.ClosedSum, &group.DateAdd)
 		helpers.CheckErr(err)
-		item := make(types.JsonAnswerItem)
-		item["Id"] = strconv.Itoa(group.Id)
-		item["AuthorId"] = strconv.Itoa(group.AuthorId)
-		item["Name"] = group.Name
-		item["Visible"] = group.Visible
-		item["OpenSum"] = fmt.Sprintf("%.2f", group.OpenSum)
-		item["ClosedSum"] = fmt.Sprintf("%.2f", group.ClosedSum)
-		item["DateAdd"] = group.DateAdd
+		item := ToJson(group)
 		body.Items = append(body.Items, item)
 	}
 

@@ -216,9 +216,9 @@ func GetUserFromBD(id string) types.User {
 func ToJson (user types.User) types.JsonAnswerItem {
 
 	item := make(types.JsonAnswerItem)
-	item["id"] = strconv.Itoa(user.Id)
+	item["Id"] = strconv.Itoa(user.Id)
 
-	if item["id"] != "0" {
+	if item["Id"] != "0" {
 		item["Email"] = user.Email
 		item["Fio"] = user.Fio
 		item["Sex"] = user.Sex
@@ -292,6 +292,7 @@ func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) 
 
 	//получаем запись в БД по логину
 	initDb()
+	login = helpers.Escape(login)
 	query := "SELECT * FROM users WHERE email = '"+login+"'"
 	//log.Printf("query: "+query)
 	results, err := dbres.Query(query)
@@ -357,6 +358,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	//проверка пользователя в базе
 	initDb()
+	login = helpers.Escape(login)
 	query := "SELECT count(id) count FROM users WHERE email = '"+login+"'"
 	//log.Printf("query: "+query)
 	results, err := dbres.Query(query)
@@ -406,7 +408,7 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	//проверка на наличие id
 	var id string
-	id, Errors, exist = helpers.ParamFromJsonRequest(params, "id", Errors)
+	id, Errors, exist = helpers.ParamFromJsonRequest(params, "Id", Errors)
 	if !exist {
 		return body, Errors
 	}
@@ -415,7 +417,7 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	user := GetUserFromBD(id)
 	item := ToJson(user)
 
-	if item["id"] == "0" {
+	if item["Id"] == "0" {
 		Errors = append(Errors, "No user with Id: "+id)
 		return body, Errors
 	}
