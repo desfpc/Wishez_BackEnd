@@ -7,6 +7,7 @@ import (
 	helpers "github.com/desfpc/Wishez_Helpers"
 	types "github.com/desfpc/Wishez_Type"
 	users "github.com/desfpc/Wishez_User"
+	"log"
 	"strconv"
 )
 
@@ -142,9 +143,12 @@ func addUserToGroup(groupId int, userId int, right string) bool {
 		right = "user"
 	}
 
-	_, err := dbres.Exec("INSERT INTO group_users (group_id, user_id, right, date_add) " +
+	log.Printf("groupId: " + strconv.Itoa(groupId) + " userId: " + strconv.Itoa(userId) + " right: " + right)
+
+	_, err := dbres.Exec("INSERT INTO `group_users` (`group_id`, `user_id`, `right`, `date_add`) " +
 		"VALUES (?, ?, ?, NOW())",
 		groupId, userId, right)
+	helpers.CheckErr(err)
 
 	if err != nil {
 		return false
@@ -541,7 +545,7 @@ func createGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 
 	//пробуем создать группу
 	initDb()
-	res, err := dbres.Exec("INSERT INTO group (id, author, name, visible, open_sum, closed_sum, date_add) " +
+	res, err := dbres.Exec("INSERT INTO `group` (`id`, `author`, `name`, `visible`, `open_sum`, `closed_sum`, `date_add`) " +
 		"VALUES (null, ?, ?, ?, 0, 0, NOW())",
 		auser.Id, name, visible)
 	helpers.CheckErr(err)
@@ -552,17 +556,18 @@ func createGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 	addedUser := addUserToGroup(int(lastId), auser.Id, "admin")
 
 	if !addedUser {
-		res, err = dbres.Exec("DELETE FROM group WHERE id = ?",
+		res, err = dbres.Exec("DELETE FROM `group` WHERE id = ?",
 			lastId)
 		helpers.CheckErr(err)
+		Errors = append(Errors, "Error when adding Group. Please try later.")
+	} else {
+		item := make(types.JsonAnswerItem)
+		item["Name"] = name
+		item["Id"] = strconv.FormatInt(lastId, 10)
+
+		body.Items = make([]types.JsonAnswerItem,0)
+		body.Items = append(body.Items, item)
 	}
-
-	item := make(types.JsonAnswerItem)
-	item["Name"] = name
-	item["Id"] = strconv.FormatInt(lastId, 10)
-
-	body.Items = make([]types.JsonAnswerItem,0)
-	body.Items = append(body.Items, item)
 
 	return body, Errors
 }
