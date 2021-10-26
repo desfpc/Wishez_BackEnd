@@ -80,8 +80,8 @@ func getGroupAndCheckUser(groupId string, auser types.User) (bool, types.Group, 
 
 // checkGroupExistById проверка на существование группы по string Id, если группа есть, выводим дополнительно ее данные
 func checkGroupExistById(groupId string) (bool, types.Group) {
-	query := "SELECT * FROM group WHERE id = "+groupId
-	results, err := dbres.Query(query)
+	query := "SELECT * FROM `group` WHERE `id` = ?"
+	results, err := dbres.Query(query, groupId)
 	helpers.CheckErr(err)
 
 	var group types.Group
@@ -500,15 +500,15 @@ func editGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, 
 	}
 
 	if existsName && existsVisible {
-		_, err := dbres.Exec("UPDATE group SET name = ?, visible = ? WHERE id = ?",
+		_, err := dbres.Exec("UPDATE `group` SET `name` = ?, `visible` = ? WHERE `id` = ?",
 			name, visible, groupId)
 		helpers.CheckErr(err)
 	} else if existsName {
-		_, err := dbres.Exec("UPDATE group SET name = ? WHERE id = ?",
+		_, err := dbres.Exec("UPDATE `group` SET `name` = ? WHERE `id` = ?",
 			name, groupId)
 		helpers.CheckErr(err)
 	} else {
-		_, err := dbres.Exec("UPDATE group SET visible = ? WHERE id = ?",
+		_, err := dbres.Exec("UPDATE `group` SET `visible` = ? WHERE `id` = ?",
 			visible, groupId)
 		helpers.CheckErr(err)
 	}

@@ -22,14 +22,43 @@ func TestWorkVsGroup(t *testing.T) {
 
 	request.Params["name"] = "Тестовая группа 1"
 	request.Params["visible"] = "hidden"
-	_, err := createGroup(request, auser)
+	answer, err := createGroup(request, auser)
 	if len(err) > 0 {
 		t.Error("Errors when creating group")
 	}
+	groupId := answer.Items[0]["Id"]
 
-	//TODO получение группы
+	//получение группы
+	request = types.JsonRequest{
+		Entity: "group",
+		Id:     "",
+		Action: "get",
+		Params: make(map[string]string),
+	}
+	request.Params["groupId"] = groupId
+	answer, err = getGroup(request, auser)
+	if len(err) > 0 {
+		t.Error("Errors when getting group")
+	}
+	answerGroupId := answer.Items[0]["Id"]
+	if answerGroupId != groupId {
+		t.Error("Wrong GroupId")
+	}
 
-	//TODO изменение группы
+	//изменение группы
+	request = types.JsonRequest{
+		Entity: "group",
+		Id:     "",
+		Action: "edit",
+		Params: make(map[string]string),
+	}
+	request.Params["groupId"] = groupId
+	request.Params["name"] = "Измененная группа"
+	request.Params["visible"] = "public"
+	answer, err = editGroup(request, auser)
+	if len(err) > 0 {
+		t.Error("Errors when updating group")
+	}
 
 	//TODO удаление группы
 }
