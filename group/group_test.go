@@ -1,12 +1,12 @@
 package group
 
 import (
+	"fmt"
 	types "github.com/desfpc/Wishez_Type"
 	"testing"
 )
 
 func TestWorkVsGroup(t *testing.T) {
-
 	//создание группы
 	request := types.JsonRequest{
 		Entity: "group",
@@ -31,11 +31,10 @@ func TestWorkVsGroup(t *testing.T) {
 	//получение группы
 	request = types.JsonRequest{
 		Entity: "group",
-		Id:     "",
+		Id:     groupId,
 		Action: "get",
 		Params: make(map[string]string),
 	}
-	request.Params["groupId"] = groupId
 	answer, err = getGroup(request, auser)
 	if len(err) > 0 {
 		t.Error("Errors when getting group")
@@ -48,11 +47,10 @@ func TestWorkVsGroup(t *testing.T) {
 	//изменение группы
 	request = types.JsonRequest{
 		Entity: "group",
-		Id:     "",
+		Id:     groupId,
 		Action: "edit",
 		Params: make(map[string]string),
 	}
-	request.Params["groupId"] = groupId
 	request.Params["name"] = "Измененная группа"
 	request.Params["visible"] = "public"
 	answer, err = editGroup(request, auser)
@@ -60,9 +58,40 @@ func TestWorkVsGroup(t *testing.T) {
 		t.Error("Errors when updating group")
 	}
 
-	//TODO удаление группы
-}
+	//TODO addUser Action: "addUser"
 
-/*func TestGetGroupAndCheckUserAdmin(t *testing.T) {
-	isAdmin, group, errors := getGroupAndCheckUserAdmin("1")
-}*/
+	//getGroupList Action: "list"
+	request = types.JsonRequest{
+		Entity: "group",
+		Id:     "",
+		Action: "list",
+		Params: make(map[string]string),
+	}
+	request.Params["groupType"] = "own"
+	answer, err = getGroupList(request, auser)
+	if len(err) > 0 {
+		t.Error("Errors when getting group list: " + err[0])
+	}
+	fmt.Println("Groups count:")
+	t.Log(len(answer.Items))
+	if answer.Items[(len(answer.Items) - 1)]["Name"] != "Измененная группа" {
+		t.Error("Errors when getting group list")
+	}
+
+
+	//TODO getUserList Action: "userList"
+
+	//TODO deleteUser Action: "deleteUser"
+
+	//удаление группы
+	request = types.JsonRequest{
+		Entity: "group",
+		Id:     groupId,
+		Action: "delete",
+		Params: make(map[string]string),
+	}
+	answer, err = deleteGroup(request, auser)
+	if len(err) > 0 {
+		t.Error("Errors when deleting group")
+	}
+}

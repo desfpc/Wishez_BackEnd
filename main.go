@@ -13,7 +13,7 @@ import (
 
 var errors types.Errors
 
-//возвращение тела запроса в виде строки
+//Возвращение тела запроса в виде строки
 func getBody(w http.ResponseWriter, r *http.Request) string  {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -26,7 +26,7 @@ func getBody(w http.ResponseWriter, r *http.Request) string  {
 	return string(body)
 }
 
-//получение массива из JSON запроса
+//Получение массива из JSON запроса
 func getArrBody(w http.ResponseWriter, r *http.Request) types.JsonRequest {
 	var body = getBody(w, r)
 	var arr types.JsonRequest
@@ -40,7 +40,7 @@ func getArrBody(w http.ResponseWriter, r *http.Request) types.JsonRequest {
 	return arr
 }
 
-//вывод JSON ответа
+//Вывод JSON ответа
 func answer(w http.ResponseWriter, status string, answer types.JsonAnswerBody, response types.JsonRequest, code int){
 
 	w.Header().Set("Content-Type", "application/json")
@@ -52,7 +52,7 @@ func answer(w http.ResponseWriter, status string, answer types.JsonAnswerBody, r
 	errors = make(types.Errors,0)
 }
 
-//главный хандлер - все проверки и роутинг идут тут
+//Главный хандлер - все проверки и роутинг идут тут
 func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := getArrBody(w, r)
@@ -104,7 +104,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	answer(w, status, anw, resp, code)
 }
 
-//главная точнка входа - слушает все и выкидывает в apiHandler
+//Главная точка входа - слушает все и выкидывает в apiHandler
 func main() {
 	errors = make(types.Errors,0)
 	http.HandleFunc("/", apiHandler)

@@ -107,7 +107,7 @@ func checkUserAdmin(auser types.User, group types.Group) bool {
 		return true
 	}
 
-	query := "SELECT COUNT(user_id) count WHERE user_id = ? AND group_id = ? AND right = 'admin'"
+	query := "SELECT COUNT(`user_id`) `count` WHERE `user_id` = ? AND `group_id` = ? AND `right` = 'admin'"
 	results, err := dbres.Query(query)
 	helpers.CheckErr(err)
 
@@ -125,7 +125,7 @@ func checkUser(auser types.User, group types.Group) bool {
 		return true
 	}
 
-	query := "SELECT COUNT(user_id) count WHERE user_id = ? AND group_id = ?"
+	query := "SELECT COUNT(`user_id`) `count` WHERE `user_id` = ? AND `group_id` = ?"
 	results, err := dbres.Query(query)
 	helpers.CheckErr(err)
 
@@ -177,21 +177,17 @@ func ToJson(group types.Group) types.JsonAnswerItem {
 
 // getGroup получение группы по Id
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"userList","params":{"groupId":"GroupId"}}
 // entity string - сущность
 // action string - действие
 // params.groupId string - ID группы
 func getGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
-	var params = resp.Params
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
-	groupId, Errors, exist := helpers.ParamFromJsonRequest(params, "groupId", Errors)
-	if !exist {
-		return body, Errors
-	}
+	groupId := resp.Id
 
 	//проверка на существование группы и прав пользователя на ее просмотр
 	initDb()
@@ -209,7 +205,7 @@ func getGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, t
 
 // getUserList получение списка пользователей в группе (метод еще не точный, возможно будет удален)
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"userList","params":{"groupId":"GroupId"}}
 // entity string - сущность
 // action string - действие
@@ -233,7 +229,7 @@ func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 	}
 
 	//получение списка пользователей
-	results, err := dbres.Query("SELECT * FROM users WHERE id IN (SELECT user_id FROM group_users WHERE group_id = ?)", groupId)
+	results, err := dbres.Query("SELECT * FROM `users` WHERE `id` IN (SELECT `user_id` FROM `group_users` WHERE `group_id` = ?)", groupId)
 	helpers.CheckErr(err)
 
 	body.Items = make([]types.JsonAnswerItem,0)
@@ -254,7 +250,7 @@ func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 
 // getGroupList получение списка доступных групп
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"list","params":{"groupType":"all","userId":1,"search":"подарок"}}
 // entity string - сущность
 // action string - действие
@@ -277,26 +273,26 @@ func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBod
 	}
 
 	//проверка на наличие ID пользователя для получения группы
-	userId, Errors, existUser := helpers.ParamFromJsonRequest(params, "userId", Errors)
+	userId, _, existUser := helpers.ParamFromJsonRequest(params, "userId", Errors)
 	userId = helpers.Escape(userId)
 
 	//проверка на существование строки поиска
-	search, Errors, existSearch := helpers.ParamFromJsonRequest(params, "search", Errors)
+	search, _, existSearch := helpers.ParamFromJsonRequest(params, "search", Errors)
 	search = helpers.Escape(search)
 
 	//формируем запрос в БД
-	query := "SELECT * FROM group WHERE "
+	query := "SELECT * FROM `group` WHERE "
 
 	if groupType == "own" {
-		query += "author = " + strconv.Itoa(auser.Id) + " "
+		query += "`author` = " + strconv.Itoa(auser.Id) + " "
 	} else {
-		query += "visible = 'public' "
+		query += "`visible` = 'public' "
 		if existUser {
-			query += "AND author = " + userId + " "
+			query += "AND `author` = " + userId + " "
 		}
 	}
 	if existSearch {
-		query += "AND name LIKE ('%" + search + "%')"
+		query += "AND `name` LIKE ('%" + search + "%')"
 	}
 
 	initDb()
@@ -318,31 +314,27 @@ func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBod
 
 // deleteGroup удаление группы
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"delete","params":{"groupId":"GroupId"}}
 // entity string - сущность
 // action string - действие
 // params.groupId string - ID группы для удаления
 func deleteGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
-	var params = resp.Params
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
-	groupId, Errors, exist := helpers.ParamFromJsonRequest(params, "groupId", Errors)
-	if !exist {
-		return body, Errors
-	}
+	groupId := resp.Id
 
 	//проверка на существование группы и прав пользователя на ее изменение
 	initDb()
-	exist, _, Errors = getGroupAndCheckUserAdmin(groupId, auser)
+	exist, _, Errors := getGroupAndCheckUserAdmin(groupId, auser)
 	if !exist {
 		return body, Errors
 	}
 
 	//удаляем группу и плачем
-	_, err := dbres.Exec("DELETE FROM group WHERE id = ?",
+	_, err := dbres.Exec("DELETE FROM `group` WHERE `id` = ?",
 		groupId)
 	helpers.CheckErr(err)
 
@@ -351,7 +343,7 @@ func deleteGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 
 // deleteUser удаление пользователя из группы
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"deleteUser","params":{"groupId":"GroupId","userId":"UserId"}}
 // entity string - сущность
 // action string - действие
@@ -385,7 +377,7 @@ func deleteUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody,
 	}
 
 	//удаляем пользователя из группы
-	_, err := dbres.Exec("DELETE FROM group_users WHERE group_id = ? AND user_id = ?",
+	_, err := dbres.Exec("DELETE FROM `group_users` WHERE `group_id` = ? AND `user_id` = ?",
 		groupId, userId)
 	helpers.CheckErr(err)
 
@@ -394,7 +386,7 @@ func deleteUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody,
 
 // addUser добавление пользователя в группу
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"addUser","params":{"groupId":"GroupId","userId":"UserId","right":"admin"}}
 // entity string - сущность
 // action string - действие
@@ -460,7 +452,7 @@ func addUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, ty
 
 // editGroup изменение группы
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"edit","params":{"name":"GroupName","visible":"visibleString", "groupId":"GroupId"}}
 // entity string - сущность
 // action string - действие
@@ -474,11 +466,7 @@ func editGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, 
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
-	var groupId string
-	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
-	if !exist {
-		return body, Errors
-	}
+	groupId := resp.Id
 
 	//проверка на существование группы и прав пользователя на ее изменение
 	initDb()
@@ -518,7 +506,7 @@ func editGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, 
 
 // createGroup создание нового листа желаний
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"group","action":"add","params":{"name":"GroupName","visible":"visibleString"}}
 // entity string - сущность
 // action string - действие
