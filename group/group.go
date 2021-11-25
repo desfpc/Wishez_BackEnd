@@ -7,7 +7,6 @@ import (
 	helpers "github.com/desfpc/Wishez_Helpers"
 	types "github.com/desfpc/Wishez_Type"
 	users "github.com/desfpc/Wishez_User"
-	"log"
 	"strconv"
 )
 
@@ -143,8 +142,6 @@ func addUserToGroup(groupId int, userId int, right string) bool {
 		right = "user"
 	}
 
-	log.Printf("groupId: " + strconv.Itoa(groupId) + " userId: " + strconv.Itoa(userId) + " right: " + right)
-
 	_, err := dbres.Exec("INSERT INTO `group_users` (`group_id`, `user_id`, `right`, `date_add`) " +
 		"VALUES (?, ?, ?, NOW())",
 		groupId, userId, right)
@@ -187,6 +184,10 @@ func getGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, t
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
+	if resp.Id == "" {
+		Errors = append(Errors, "No Id in Request")
+		return body, Errors
+	}
 	groupId := resp.Id
 
 	//проверка на существование группы и прав пользователя на ее просмотр
@@ -212,18 +213,18 @@ func getGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, t
 // params.groupId string - ID группы
 func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
-	var params = resp.Params
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
-	groupId, Errors, exist := helpers.ParamFromJsonRequest(params, "groupId", Errors)
-	if !exist {
+	if resp.Id == "" {
+		Errors = append(Errors, "No Id in Request")
 		return body, Errors
 	}
+	groupId := resp.Id
 
 	//проверка на существование группы и прав пользователя на ее просмотр
 	initDb()
-	exist, _, Errors = getGroupAndCheckUser(groupId, auser)
+	exist, _, Errors := getGroupAndCheckUser(groupId, auser)
 	if !exist {
 		return body, Errors
 	}
@@ -324,6 +325,10 @@ func deleteGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
+	if resp.Id == "" {
+		Errors = append(Errors, "No Id in Request")
+		return body, Errors
+	}
 	groupId := resp.Id
 
 	//проверка на существование группы и прав пользователя на ее изменение
@@ -356,11 +361,11 @@ func deleteUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody,
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
-	var groupId string
-	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
-	if !exist {
+	if resp.Id == "" {
+		Errors = append(Errors, "No Id in Request")
 		return body, Errors
 	}
+	groupId := resp.Id
 
 	//проверка на наличие ID пользователя
 	var userId string
@@ -400,11 +405,11 @@ func addUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, ty
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
-	var groupId string
-	groupId, Errors, exist = helpers.ParamFromJsonRequest(params, "groupId", Errors)
-	if !exist {
+	if resp.Id == "" {
+		Errors = append(Errors, "No Id in Request")
 		return body, Errors
 	}
+	groupId := resp.Id
 
 	//проверка на наличие ID пользователя
 	var userId string
@@ -466,6 +471,10 @@ func editGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, 
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие ID группы
+	if resp.Id == "" {
+		Errors = append(Errors, "No Id in Request")
+		return body, Errors
+	}
 	groupId := resp.Id
 
 	//проверка на существование группы и прав пользователя на ее изменение

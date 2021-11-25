@@ -1,7 +1,6 @@
 package group
 
 import (
-	"fmt"
 	types "github.com/desfpc/Wishez_Type"
 	"testing"
 )
@@ -58,9 +57,21 @@ func TestWorkVsGroup(t *testing.T) {
 		t.Error("Errors when updating group")
 	}
 
-	//TODO addUser Action: "addUser"
+	//добавление пользователя в группу
+	request = types.JsonRequest{
+		Entity: "group",
+		Id:     groupId,
+		Action: "addUser",
+		Params: make(map[string]string),
+	}
+	request.Params["userId"] = "2"
+	request.Params["right"] = "user"
+	answer, err = addUser(request, auser)
+	if len(err) > 0 {
+		t.Error("Errors when adding user to group: " + err[0])
+	}
 
-	//getGroupList Action: "list"
+	//получение списка групп
 	request = types.JsonRequest{
 		Entity: "group",
 		Id:     "",
@@ -72,16 +83,37 @@ func TestWorkVsGroup(t *testing.T) {
 	if len(err) > 0 {
 		t.Error("Errors when getting group list: " + err[0])
 	}
-	fmt.Println("Groups count:")
-	t.Log(len(answer.Items))
 	if answer.Items[(len(answer.Items) - 1)]["Name"] != "Измененная группа" {
 		t.Error("Errors when getting group list")
 	}
 
+	//получение списка пользователей в группе TODO getUserList Action: "userList"
+	request = types.JsonRequest{
+		Entity: "group",
+		Id:     groupId,
+		Action: "userList",
+		Params: make(map[string]string),
+	}
+	answer, err = getUserList(request, auser)
+	if len(err) > 0 {
+		t.Error("Errors when getting group users list: " + err[0])
+	}
+	if len(answer.Items) != 2 {
+		t.Error("Errors when getting group users list: wrong users count")
+	}
 
-	//TODO getUserList Action: "userList"
-
-	//TODO deleteUser Action: "deleteUser"
+	//удаление пользователя из группы TODO deleteUser Action: "deleteUser"
+	request = types.JsonRequest{
+		Entity: "group",
+		Id:     groupId,
+		Action: "deleteUser",
+		Params: make(map[string]string),
+	}
+	request.Params["userId"] = "2"
+	answer, err = deleteUser(request, auser)
+	if len(err) > 0 {
+		t.Error("Errors when deleting user from group")
+	}
 
 	//удаление группы
 	request = types.JsonRequest{
