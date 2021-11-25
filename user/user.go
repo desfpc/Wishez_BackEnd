@@ -238,7 +238,7 @@ func ToJson (user types.User) types.JsonAnswerItem {
 
 // doRefreshToken обновление токенов
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"user","action":"refreshToken"}
 // entity string - сущность
 // action string - действие
@@ -249,7 +249,7 @@ func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody
 	authorizeError := true
 	expireError:= false
 	tuser, authorizeError, expireError = GetAuthorization(refreshToken, "refresh")
-	//tuser, _, _ = GetAuthorization(refreshToken)
+
 	if !authorizeError && !expireError && tuser.Id == auser.Id {
 		item := make(types.JsonAnswerItem)
 		item["accessToken"] = MakeToken("access", auser)
@@ -264,7 +264,7 @@ func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody
 
 // authorizeUser авторизация пользователя
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"user","action":"authorize","params":{"login":"UserLogin","pass":"UserPassword"}}
 // entity string - сущность
 // action string - действие
@@ -276,7 +276,7 @@ func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) 
 	var exist bool
 	Errors := make(types.Errors,0)
 
-	//проверка на наличае логина
+	//проверка на наличие логина
 	var login string
 	login, Errors, exist = helpers.ParamFromJsonRequest(params, "login", Errors)
 	if !exist {
@@ -324,7 +324,7 @@ func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) 
 
 // registerUser регистрация нового пользователя
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"user","action":"register","params":{"login":"UserLogin","pass":"UserPassword"}}
 // entity string - сущность
 // action string - действие
@@ -337,7 +337,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	var exist bool
 	Errors := make(types.Errors,0)
 
-	//проверка на наличае логина
+	//проверка на наличие логина
 	var login string
 	login, Errors, exist = helpers.ParamFromJsonRequest(params, "login", Errors)
 	if !exist {
@@ -394,24 +394,21 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 // getUserByID получение записи пользователя по id
 //
-// предпологаемый json запроса:
+// предполагаемый json запроса:
 // {"entity":"user","action":"get","params":{"id":"1"}}
 // entity string - сущность
 // action string - действие
 // params.id string - ID пользователя (число в виде строки)
 func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
-
 	var body types.JsonAnswerBody
-	var params = resp.Params
-	var exist bool
 	Errors := make(types.Errors,0)
 
 	//проверка на наличие id
-	var id string
-	id, Errors, exist = helpers.ParamFromJsonRequest(params, "Id", Errors)
-	if !exist {
+	if resp.Id == "" {
+		Errors = append(Errors, "No Id in Request")
 		return body, Errors
 	}
+	id := resp.Id
 
 	//TODO проверка прав на просмотр пользователя для формирования коллекции (выводить все или короткие сведения)
 	user := GetUserFromBD(id)

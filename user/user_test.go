@@ -71,23 +71,22 @@ func TestGetAuthorization(t *testing.T) {
 func TestGetUserByID(t *testing.T) {
 	var request = types.JsonRequest{
 		Entity: "user",
-		Id:     "",
+		Id:     "1",
 		Action: "getById",
 		Params: make(map[string]string),
 	}
-	request.Params["Id"] = "1"
 	_, err := getUserByID(request)
 	if len(err) > 0 {
 		t.Error("Errors when getting user request by ID")
 	}
 
-	request.Params["Id"] = "-1"
+	request.Id = "-1"
 	_, err = getUserByID(request)
 	if len(err) == 0 {
 		t.Error("No errors when getting user request by wrong ID")
 	}
 
-	request.Params = nil
+	request.Id = ""
 	_, err = getUserByID(request)
 	if len(err) == 0 {
 		t.Error("No errors when getting user by wrong request")
