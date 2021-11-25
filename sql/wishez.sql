@@ -24,13 +24,13 @@ CREATE TABLE IF NOT EXISTS `chat` (
                                       `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                       `date_edit` datetime DEFAULT NULL,
                                       PRIMARY KEY (`id`),
+                                      KEY `IDX_chat_chat_id` (`chat_id`),
                                       KEY `FK_chat_author` (`author`),
                                       KEY `FK_chat_group` (`group`),
                                       KEY `FK_chat_receiver` (`receiver`),
-                                      KEY `IDX_chat_chat_id` (`chat_id`),
-                                      CONSTRAINT `FK_chat_author` FOREIGN KEY (`author`) REFERENCES `users` (`id`),
-                                      CONSTRAINT `FK_chat_group` FOREIGN KEY (`group`) REFERENCES `group` (`id`),
-                                      CONSTRAINT `FK_chat_receiver` FOREIGN KEY (`receiver`) REFERENCES `users` (`id`)
+                                      CONSTRAINT `FK_chat_author` FOREIGN KEY (`author`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                                      CONSTRAINT `FK_chat_group` FOREIGN KEY (`group`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                                      CONSTRAINT `FK_chat_receiver` FOREIGN KEY (`receiver`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Экспортируемые данные не выделены.
@@ -49,11 +49,11 @@ CREATE TABLE IF NOT EXISTS `files` (
                                        `avatar` int DEFAULT '0',
                                        `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                        PRIMARY KEY (`id`),
+                                       KEY `IDX_files_kind` (`kind`) USING BTREE,
                                        KEY `FK_files_users` (`avatar`),
                                        KEY `FK_files_wish` (`wish`),
-                                       KEY `IDX_files_kind` (`kind`) USING BTREE,
-                                       CONSTRAINT `FK_files_users` FOREIGN KEY (`avatar`) REFERENCES `users` (`id`),
-                                       CONSTRAINT `FK_files_wish` FOREIGN KEY (`wish`) REFERENCES `wish` (`id`)
+                                       CONSTRAINT `FK_files_users` FOREIGN KEY (`avatar`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                                       CONSTRAINT `FK_files_wish` FOREIGN KEY (`wish`) REFERENCES `wish` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Экспортируемые данные не выделены.
@@ -69,9 +69,9 @@ CREATE TABLE IF NOT EXISTS `group` (
                                        `closed_sum` decimal(20,4) NOT NULL DEFAULT '0.0000',
                                        `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                        PRIMARY KEY (`id`),
-                                       KEY `FK_users_user` (`author`) USING BTREE,
-                                       CONSTRAINT `FK__users` FOREIGN KEY (`author`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+                                       KEY `FK_group_author` (`author`),
+                                       CONSTRAINT `FK_group_author` FOREIGN KEY (`author`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
 
 -- Экспортируемые данные не выделены.
 
@@ -83,7 +83,11 @@ CREATE TABLE IF NOT EXISTS `group_users` (
                                              `right` enum('admin','user') NOT NULL DEFAULT 'user',
                                              `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                              PRIMARY KEY (`group_id`,`user_id`),
-                                             KEY `IDX_group_users_right` (`right`) USING BTREE
+                                             KEY `FK_user` (`user_id`),
+                                             KEY `FK_group` (`group_id`),
+                                             KEY `IDX_right` (`right`) USING BTREE,
+                                             CONSTRAINT `FK_group` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                                             CONSTRAINT `FK_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Экспортируемые данные не выделены.
@@ -99,7 +103,7 @@ CREATE TABLE IF NOT EXISTS `mounth_budget` (
                                                `date_edit` datetime DEFAULT NULL,
                                                PRIMARY KEY (`user_id`,`mounth`),
                                                KEY `IDX_mounth_budget_mounth` (`mounth`),
-                                               CONSTRAINT `FK_mounth_budget_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+                                               CONSTRAINT `FK_mounth_budget_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Бюджет пользователя на месяц, для авто-выбора желания';
 
 -- Экспортируемые данные не выделены.
@@ -112,11 +116,11 @@ CREATE TABLE IF NOT EXISTS `recommendation` (
                                                 `group_id` int NOT NULL,
                                                 `wish_id` int NOT NULL,
                                                 PRIMARY KEY (`id`),
+                                                KEY `IDX_recommendation_mounth` (`mounth`),
                                                 KEY `FK_recommendation_group` (`group_id`),
                                                 KEY `FK_recommendation_wish` (`wish_id`),
-                                                KEY `IDX_recommendation_mounth` (`mounth`),
-                                                CONSTRAINT `FK_recommendation_group` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`),
-                                                CONSTRAINT `FK_recommendation_wish` FOREIGN KEY (`wish_id`) REFERENCES `wish` (`id`)
+                                                CONSTRAINT `FK_recommendation_group` FOREIGN KEY (`group_id`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                                                CONSTRAINT `FK_recommendation_wish` FOREIGN KEY (`wish_id`) REFERENCES `wish` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Экспортируемые данные не выделены.
@@ -141,8 +145,8 @@ CREATE TABLE IF NOT EXISTS `users` (
                                        PRIMARY KEY (`id`),
                                        UNIQUE KEY `UNQ_email` (`email`) USING BTREE,
                                        KEY `FK_users_files` (`avatar`),
-                                       CONSTRAINT `FK_users_files` FOREIGN KEY (`avatar`) REFERENCES `files` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8;
+                                       CONSTRAINT `FK_users_files` FOREIGN KEY (`avatar`) REFERENCES `files` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8;
 
 -- Экспортируемые данные не выделены.
 
@@ -154,10 +158,10 @@ CREATE TABLE IF NOT EXISTS `users_friends` (
                                                `approved` enum('Y','N') NOT NULL DEFAULT 'N',
                                                `date_approved` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                                PRIMARY KEY (`user_id`,`friend_id`),
-                                               KEY `FK_users_friends_users_2` (`friend_id`),
                                                KEY `FK_users_friends_users_1` (`user_id`),
-                                               CONSTRAINT `FK_users_friends_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-                                               CONSTRAINT `FK_users_friends_users_2` FOREIGN KEY (`friend_id`) REFERENCES `users` (`id`)
+                                               KEY `FK_users_friends_users_2` (`friend_id`),
+                                               CONSTRAINT `FK_users_friends_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                                               CONSTRAINT `FK_users_friends_users_2` FOREIGN KEY (`friend_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Экспортируемые данные не выделены.
@@ -177,11 +181,11 @@ CREATE TABLE IF NOT EXISTS `wish` (
                                       `date_edit` datetime DEFAULT NULL,
                                       `priority` int NOT NULL DEFAULT '4',
                                       PRIMARY KEY (`id`),
-                                      KEY `FK_wish_users` (`author`),
-                                      KEY `FK_wish_group` (`group`),
                                       KEY `IDX_wish_status` (`status`) USING BTREE,
-                                      CONSTRAINT `FK_wish_group` FOREIGN KEY (`group`) REFERENCES `group` (`id`),
-                                      CONSTRAINT `FK_wish_users` FOREIGN KEY (`author`) REFERENCES `users` (`id`)
+                                      KEY `FK_wish_group` (`group`),
+                                      KEY `FK_wish_users` (`author`),
+                                      CONSTRAINT `FK_wish_group` FOREIGN KEY (`group`) REFERENCES `group` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+                                      CONSTRAINT `FK_wish_users` FOREIGN KEY (`author`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Желание';
 
 -- Экспортируемые данные не выделены.
