@@ -36,7 +36,7 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 	case "authorize":
 		body, err = authorizeUser(resp)
 	case "get":
-		body, err = getUserByID(resp)
+		body, err = getUserByID(resp, auser)
 	case "refreshToken":
 		body, err = doRefreshToken(auser, refreshToken)
 	//TODO case "addFriend":
@@ -45,12 +45,29 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 	//	body, err = deleteFriend(resp)
 	//TODO case "confirmFriend":
 	//	body, err = confirmFriend(resp)
-	//TODO case "list":
-	//	body, err = getUserList(resp)
+	case "list":
+		body, err = getUserList(resp, auser)
 	default:
 		err, code = helpers.NoRouteErrorAnswer()
 	}
 	return body, err, code
+}
+
+// getUserList TODO получение списка доступных пользователей (друзей)
+//
+// предполагаемый json запроса:
+// {"entity":"user","action":"list","params":{"type":"all","search":"вася"}}
+// entity string - сущность
+// action string - действие
+// params.type string - тип получаемых пользователей: строка из массива ['all','friend','request']
+// params.search string - строка для поиска пользователя по известным данным (имя, email) (необязательно)
+func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	Errors := make(types.Errors,0)
+
+	
+
+	return body, Errors
 }
 
 // MakeToken функция генерирует токен
@@ -212,9 +229,23 @@ func GetUserFromBD(id string) types.User {
 	return user
 }
 
+// ToPublicJson формирование публичного JsonAnswerItem из User
+func ToPublicJson (user types.User) types.JsonAnswerItem {
+	item := make(types.JsonAnswerItem)
+	item["Id"] = strconv.Itoa(user.Id)
+
+	if item["Id"] != "0" {
+		item["Fio"] = user.Fio
+		item["Sex"] = user.Sex
+		item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
+		item["DateAdd"] = user.DateAdd
+	}
+
+	return item
+}
+
 // ToJson формирование JsonAnswerItem из User
 func ToJson (user types.User) types.JsonAnswerItem {
-
 	item := make(types.JsonAnswerItem)
 	item["Id"] = strconv.Itoa(user.Id)
 
@@ -399,7 +430,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 // entity string - сущность
 // action string - действие
 // params.id string - ID пользователя (число в виде строки)
-func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
+func getUserByID(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	Errors := make(types.Errors,0)
 
@@ -408,11 +439,28 @@ func getUserByID(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 		Errors = append(Errors, "No Id in Request")
 		return body, Errors
 	}
-	id := resp.Id
 
-	//TODO проверка прав на просмотр пользователя для формирования коллекции (выводить все или короткие сведения)
+	id := resp.Id
 	user := GetUserFromBD(id)
-	item := ToJson(user)
+
+	//проверка прав на просмотр пользователя для формирования коллекции (выводить все или короткие сведения)
+	friendRights := true
+
+	if user.Id != auser.Id {
+		initDb()
+		var counter int
+		query := "SELECT count(*) FROM `users_friends` WHERE ((`user_id` = ? AND `friend_id` = ?) OR (`user_id` = ? AND `friend_id` = ?)) AND approved = 'Y'"
+		dbres.QueryRow(query, user.Id, auser.Id, auser.Id, user.Id).Scan(&counter)
+		if counter == 0 {
+			friendRights = false
+		}
+	}
+	var item types.JsonAnswerItem
+	if friendRights {
+		item = ToJson(user)
+	} else {
+		item = ToPublicJson(user)
+	}
 
 	if item["Id"] == "0" {
 		Errors = append(Errors, "No user with Id: "+id)
