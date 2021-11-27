@@ -175,10 +175,10 @@ func ToJson(group types.Group) types.JsonAnswerItem {
 // getGroup получение группы по Id
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"userList","params":{"groupId":"GroupId"}}
-// entity string - сущность
-// action string - действие
-// params.groupId string - ID группы
+// {"Entity":"group","Action":"userList","Id":"1","params":{}}
+// Entity string - сущность
+// Action string - действие
+// Id string - Id группы
 func getGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	Errors := make(types.Errors,0)
@@ -207,10 +207,10 @@ func getGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, t
 // getUserList получение списка пользователей в группе (метод еще не точный, возможно будет удален)
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"userList","params":{"groupId":"GroupId"}}
-// entity string - сущность
-// action string - действие
-// params.groupId string - ID группы
+// {"Entity":"group","Action":"userList","Id":"1","params":{}}
+// Entity string - сущность
+// Action string - действие
+// Id string - Id группы
 func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	Errors := make(types.Errors,0)
@@ -252,12 +252,12 @@ func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 // getGroupList получение списка доступных групп
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"list","params":{"groupType":"all","userId":1,"search":"подарок"}}
-// entity string - сущность
-// action string - действие
-// params.groupType string - тип получаемых групп: строка из массива ['own','all']
-// params.userId string - id пользователя, если надо получить его публичные группы (необязательно)
-// params.search string - строка для поиска (необязательно)
+// {"Entity":"group","Action":"list","Params":{"groupType":"all","userId":1,"search":"подарок"}}
+// Entity string - сущность
+// Action string - действие
+// Params.groupType string - тип получаемых групп: строка из массива ['own','all']
+// Params.userId string - id пользователя, если надо получить его публичные группы (необязательно)
+// Params.search string - строка для поиска (необязательно)
 func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
@@ -316,10 +316,10 @@ func getGroupList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBod
 // deleteGroup удаление группы
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"delete","params":{"groupId":"GroupId"}}
-// entity string - сущность
-// action string - действие
-// params.groupId string - ID группы для удаления
+// {"Entity":"group","Action":"delete","Id":"1","Params":{}}
+// Entity string - сущность
+// Action string - действие
+// Id string - ID группы для удаления
 func deleteGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	Errors := make(types.Errors,0)
@@ -349,11 +349,11 @@ func deleteGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 // deleteUser удаление пользователя из группы
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"deleteUser","params":{"groupId":"GroupId","userId":"UserId"}}
-// entity string - сущность
-// action string - действие
-// params.groupId string - ID группы, куда нужно добавить пользователя
-// params.userId string - ID пользователя, добавляемого в группу
+// {"Entity":"group","Action":"deleteUser","Id":"1","Params":{"userId":"UserId"}}
+// Entity string - сущность
+// Action string - действие
+// Id string - ID группы, куда нужно добавить пользователя
+// Params.userId string - ID пользователя, добавляемого в группу
 func deleteUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
@@ -392,12 +392,12 @@ func deleteUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody,
 // addUser добавление пользователя в группу
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"addUser","params":{"groupId":"GroupId","userId":"UserId","right":"admin"}}
-// entity string - сущность
-// action string - действие
-// params.groupId string - ID группы, куда нужно добавить пользователя
-// params.userId string - ID пользователя, добавляемого в группу
-// params.right string - права пользователя в группе: строка из массива ['admin','user']
+// {"Entity":"group","Action":"addUser","Id":"1","Params":{"userId":"UserId","right":"admin"}}
+// Entity string - сущность
+// Action string - действие
+// Id string - ID группы, куда нужно добавить пользователя
+// Params.userId string - ID пользователя, добавляемого в группу
+// Params.right string - права пользователя в группе: строка из массива ['admin','user']
 func addUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
@@ -458,12 +458,12 @@ func addUser(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, ty
 // editGroup изменение группы
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"edit","params":{"name":"GroupName","visible":"visibleString", "groupId":"GroupId"}}
-// entity string - сущность
-// action string - действие
-// params.groupId string - ID группы для редактирования
-// params.name string - новое наименование группы (необязательно)
-// params.visible string - видимость группы: строка из массива ['hidden','normal','public'] (необязательно)
+// {"Entity":"group","Action":"edit","Id":"1","Params":{"name":"GroupName","visible":"visibleString"}}
+// Entity string - сущность
+// Action string - действие
+// Id string - ID группы для редактирования
+// Params.name string - новое наименование группы (необязательно)
+// Params.visible string - видимость группы: строка из массива ['hidden','normal','public'] (необязательно)
 func editGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
@@ -516,11 +516,11 @@ func editGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, 
 // createGroup создание нового листа желаний
 //
 // предполагаемый json запроса:
-// {"entity":"group","action":"add","params":{"name":"GroupName","visible":"visibleString"}}
-// entity string - сущность
-// action string - действие
-// params.name string - наименование новой группы
-// params.visible string - видимость группы: строка из массива ['hidden','normal','public']
+// {"Entity":"group","Action":"add","Params":{"name":"GroupName","visible":"visibleString"}}
+// Entity string - сущность
+// Action string - действие
+// Params.name string - наименование новой группы
+// Params.visible string - видимость группы: строка из массива ['hidden','normal','public']
 func createGroup(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params

@@ -56,16 +56,16 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 // getUserList TODO получение списка доступных пользователей (друзей)
 //
 // предполагаемый json запроса:
-// {"entity":"user","action":"list","params":{"type":"all","search":"вася"}}
-// entity string - сущность
-// action string - действие
-// params.type string - тип получаемых пользователей: строка из массива ['all','friend','request']
-// params.search string - строка для поиска пользователя по известным данным (имя, email) (необязательно)
+// {"Entity":"user","Action":"list","Params":{"type":"all","search":"вася"}}
+// Entity string - сущность
+// Action string - действие
+// Params.type string - тип получаемых пользователей: строка из массива ['all','friend','request']
+// Params.search string - строка для поиска пользователя по известным данным (имя, email) (необязательно)
 func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	Errors := make(types.Errors,0)
 
-	
+
 
 	return body, Errors
 }
@@ -296,11 +296,11 @@ func doRefreshToken(auser types.User, refreshToken string) (types.JsonAnswerBody
 // authorizeUser авторизация пользователя
 //
 // предполагаемый json запроса:
-// {"entity":"user","action":"authorize","params":{"login":"UserLogin","pass":"UserPassword"}}
-// entity string - сущность
-// action string - действие
-// params.login string - логин (email) пользователя
-// params.pass string - пароль пользователя
+// {"Entity":"user","Action":"authorize","Params":{"login":"UserLogin","pass":"UserPassword"}}
+// Entity string - сущность
+// Action string - действие
+// Params.login string - логин (email) пользователя
+// Params.pass string - пароль пользователя
 func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	var params = resp.Params
@@ -356,11 +356,11 @@ func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) 
 // registerUser регистрация нового пользователя
 //
 // предполагаемый json запроса:
-// {"entity":"user","action":"register","params":{"login":"UserLogin","pass":"UserPassword"}}
-// entity string - сущность
-// action string - действие
-// params.login string - логин (email) пользователя
-// params.pass string - пароль пользователя
+// {"Entity":"user","Action":"register","Params":{"login":"UserLogin","pass":"UserPassword"}}
+// Entity string - сущность
+// Action string - действие
+// Params.login string - логин (email) пользователя
+// Params.pass string - пароль пользователя
 func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	var body types.JsonAnswerBody
@@ -426,10 +426,10 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 // getUserByID получение записи пользователя по id
 //
 // предполагаемый json запроса:
-// {"entity":"user","action":"get","params":{"id":"1"}}
-// entity string - сущность
-// action string - действие
-// params.id string - ID пользователя (число в виде строки)
+// {"Entity":"user","Action":"get","id":"1"}
+// Entity string - сущность
+// Action string - действие
+// Id string - ID пользователя (число в виде строки)
 func getUserByID(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
 	Errors := make(types.Errors,0)
