@@ -39,8 +39,8 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 		body, err = getUserByID(resp, auser)
 	case "refreshToken":
 		body, err = doRefreshToken(auser, refreshToken)
-	//TODO case "addFriend":
-	//	body, err = addFriend(resp)
+	case "addFriend":
+		body, err = addFriend(resp, auser)
 	//TODO case "deleteFriend":
 	//	body, err = deleteFriend(resp)
 	//TODO case "confirmFriend":
@@ -53,7 +53,33 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 	return body, err, code
 }
 
-// getUserList TODO получение списка доступных пользователей (друзей)
+// TODO addFriend добавление пользователя в друзья
+//
+// предполагаемый json запроса:
+// {"Entity":"user","Action":"addFriend","Params":{"userId":1}}
+// Entity string - сущность
+// Action string - действие
+// Params.userId string - Id пользователя для добавления в друзья
+func addFriend(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
+	var body types.JsonAnswerBody
+	var params = resp.Params
+	Errors := make(types.Errors,0)
+
+	//проверка на наличие ID пользователя
+	userId, Errors, exist := helpers.ParamFromJsonRequest(params, "userId", Errors)
+	if !exist {
+		return body, Errors
+	}
+
+	initDb()
+	
+	//TODO проверка наличия записи, если есть заявка без апрува, то апрув. Если записей нет - создается заявка
+	query := ""
+
+	return body, Errors
+}
+
+// getUserList получение списка доступных пользователей (друзей)
 //
 // предполагаемый json запроса:
 // {"Entity":"user","Action":"list","Params":{"type":"all","search":"вася"}}
@@ -63,9 +89,50 @@ func Route(resp types.JsonRequest, auser types.User, refreshToken string) (types
 // Params.search string - строка для поиска пользователя по известным данным (имя, email) (необязательно)
 func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody, types.Errors) {
 	var body types.JsonAnswerBody
+	var params = resp.Params
 	Errors := make(types.Errors,0)
 
+	//проверка на наличие типа пользователей
+	userType, Errors, typeExist := helpers.ParamFromJsonRequest(params, "type", Errors)
+	if !typeExist {
+		return body, Errors
+	}
 
+	//проверка на наличае строки поиска
+	search, searchExist := params["search"]
+	search = helpers.Escape(search)
+
+	stringUser := strconv.Itoa(auser.Id)
+
+	query := "SELECT `id`, `email`, `fio`, `avatar`  FROM `users` WHERE `id` IN"
+	switch userType {
+	case "friend":
+		query += "(SELECT `friend_id` FROM `users_friends` WHERE `user_id` = '" + stringUser + "' AND approved = 1 " +
+			"UNION ALL SELECT `user_id` FROM `users_friends` WHERE `friend_id` = '" + stringUser + "' AND approved = 1)"
+	case "request":
+		query += "(SELECT `friend_id` FROM `users_friends` WHERE `user_id` = '" + stringUser + "' AND approved = 0 " +
+			"UNION ALL SELECT `user_id` FROM `users_friends` WHERE `friend_id` = '" + stringUser + "' AND approved = 0)"
+	default:
+		query += "(SELECT `friend_id` FROM `users_friends` WHERE `user_id` = '" + stringUser + "' " +
+			"UNION ALL SELECT `user_id` FROM `users_friends` WHERE `friend_id` = '" + stringUser + "')"
+	}
+
+	if searchExist {
+		query += " AND (LOWER(`fio`) LIKE LOWER('%" + search + "%') OR LOWER(email) LIKE LOWER('%" + search + "%'))"
+	}
+
+	results, err := dbres.Query(query)
+	helpers.CheckErr(err)
+
+	for results.Next() {
+		var user types.User
+		err = results.Scan(&user.Id, &user.Email, &user.Fio, &user.Avatar)
+		helpers.CheckErr(err)
+
+		item := make(types.JsonAnswerItem)
+		item = ToJson(user)
+		body.Items = append(body.Items, item)
+	}
 
 	return body, Errors
 }
@@ -213,9 +280,8 @@ func hashAndSalt(pwd []byte) string {
 func GetUserFromBD(id string) types.User {
 	initDb()
 	var user types.User
-	id = helpers.Escape(id)
-	query := "SELECT * FROM users WHERE id = "+id
-	results, err := dbres.Query(query)
+	query := "SELECT * FROM `users` WHERE `id` = ?"
+	results, err := dbres.Query(query, id)
 	helpers.CheckErr(err)
 
 	//перебираем результаты
@@ -250,18 +316,45 @@ func ToJson (user types.User) types.JsonAnswerItem {
 	item["Id"] = strconv.Itoa(user.Id)
 
 	if item["Id"] != "0" {
-		item["Email"] = user.Email
-		item["Fio"] = user.Fio
-		item["Sex"] = user.Sex
-		item["Telegram"] = helpers.MakeStringFromSQL(user.Telegram)
-		item["Instagram"] = helpers.MakeStringFromSQL(user.Instagram)
-		item["Twitter"] = helpers.MakeStringFromSQL(user.Twitter)
-		item["Facebook"] = helpers.MakeStringFromSQL(user.Facebook)
-		item["Phone"] = helpers.MakeStringFromSQL(user.Phone)
-		item["Role"] = user.Role
-		item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
-		item["Google"] = helpers.MakeStringFromSQL(user.Google)
-		item["DateAdd"] = user.DateAdd
+		if len(user.Email) > 0 {
+			item["Email"] = user.Email
+		}
+		if len(user.Fio) > 0 {
+			item["Fio"] = user.Fio
+		}
+		if len(user.Sex) > 0 {
+			item["Sex"] = user.Sex
+		}
+		if user.Telegram.Valid {
+			item["Telegram"] = helpers.MakeStringFromSQL(user.Telegram)
+		}
+		if user.Instagram.Valid {
+			item["Instagram"] = helpers.MakeStringFromSQL(user.Instagram)
+		}
+		if user.Twitter.Valid {
+			item["Twitter"] = helpers.MakeStringFromSQL(user.Twitter)
+		}
+		if user.Facebook.Valid {
+			item["Facebook"] = helpers.MakeStringFromSQL(user.Facebook)
+		}
+		if user.Phone.Valid {
+			item["Phone"] = helpers.MakeStringFromSQL(user.Phone)
+		}
+		if len(user.Role) > 0 {
+			item["Role"] = user.Role
+		}
+		if user.Avatar.Valid {
+			item["Avatar"] = helpers.MakeStringFromIntSQL(user.Avatar)
+		}
+		if user.Google.Valid {
+			item["Google"] = helpers.MakeStringFromSQL(user.Google)
+		}
+		if len(user.Sex) > 0 {
+			item["Sex"] = user.Sex
+		}
+		if len(user.DateAdd) > 0 {
+			item["DateAdd"] = user.DateAdd
+		}
 	}
 
 	return item
@@ -353,7 +446,7 @@ func authorizeUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) 
 	return body, Errors
 }
 
-// registerUser регистрация нового пользователя
+// registerUser регистрация нового пользователя TODO принимать fio (не обязательно)
 //
 // предполагаемый json запроса:
 // {"Entity":"user","Action":"register","Params":{"login":"UserLogin","pass":"UserPassword"}}
@@ -389,10 +482,8 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 
 	//проверка пользователя в базе
 	initDb()
-	login = helpers.Escape(login)
-	query := "SELECT count(id) count FROM users WHERE email = '"+login+"'"
-	//log.Printf("query: "+query)
-	results, err := dbres.Query(query)
+	query := "SELECT count(`id`) `count` FROM `users` WHERE `email` = ?"
+	results, err := dbres.Query(query, login)
 	helpers.CheckErr(err)
 
 	count := db.CheckCount(results)
@@ -405,7 +496,7 @@ func registerUser(resp types.JsonRequest) (types.JsonAnswerBody, types.Errors) {
 	//регистрация пользователя
 	passHash := hashAndSalt([]byte(pass)) //хэш пароля
 
-	res, err := dbres.Exec("INSERT INTO users (id, email, pass, fio, role, date_add, sex) " +
+	res, err := dbres.Exec("INSERT INTO `users` (`id`, `email`, `pass`, `fio`, `role`, `date_add`, `sex`) " +
 		"VALUES (null, ?, ?, ?, ?, NOW(), ?)",
 		login, passHash, "Unknown", "user", "other")
 	helpers.CheckErr(err)

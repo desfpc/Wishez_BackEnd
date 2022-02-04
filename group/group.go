@@ -242,7 +242,7 @@ func getUserList(resp types.JsonRequest, auser types.User) (types.JsonAnswerBody
 		helpers.CheckErr(err)
 
 		item := make(types.JsonAnswerItem)
-		item = users.ToJson(user)
+		item = users.ToPublicJson(user)
 		body.Items = append(body.Items, item)
 	}
 

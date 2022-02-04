@@ -28,7 +28,6 @@ func Db(driverName string, dataSourceName string) *sql.DB  {
 	if dataSourceName == "" {
 		dataSourceName = "root:root@/wishez"
 	}
-	//db, err := sql.Open("mysql", "root:025sergLBBK1&*@/wishez")
 	db, err := sql.Open(driverName, dataSourceName)
 	if err != nil {
 		res = nil
